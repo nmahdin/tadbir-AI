@@ -24,6 +24,9 @@ import { UserManagementView } from './components/users/UserManagementView';
 import { RoleManagementView } from './components/roles/RoleManagementView';
 import { UserProfileView } from './components/users/UserProfileView';
 import { DamMainView } from './components/dam/DamMainView';
+import { ChatView } from './components/chat/ChatView';
+import { ThoughtRoomMainView } from './components/thought-room/ThoughtRoomMainView';
+import { SecretariatMainView } from './components/secretariat/SecretariatMainView';
 
 // Modals & Drawers
 import { TaskDetailDrawer } from './components/tasks/TaskDetailDrawer';
@@ -47,6 +50,18 @@ const MainLayout: React.FC = () => {
         return <ProjectsView />;
       case 'project-detail':
         return <ProjectDetailView />;
+      case 'thought-room':
+        return (
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+            <ThoughtRoomMainView />
+          </div>
+        );
+      case 'secretariat':
+        return (
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+            <SecretariatMainView />
+          </div>
+        );
       case 'assets':
         return (
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
@@ -55,6 +70,8 @@ const MainLayout: React.FC = () => {
         );
       case 'my-tasks':
         return <MyTasksView />;
+      case 'messages':
+        return <ChatView />;
       case 'teams':
         return <TeamsView />;
       case 'calendar':

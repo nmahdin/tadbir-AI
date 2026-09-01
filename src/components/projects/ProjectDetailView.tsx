@@ -20,7 +20,9 @@ import {
   Filter,
   CheckCircle2,
   Tag,
-  FolderOpen
+  FolderOpen,
+  MessageSquare,
+  AlertTriangle
 } from 'lucide-react';
 
 export const ProjectDetailView: React.FC = () => {
@@ -35,18 +37,20 @@ export const ProjectDetailView: React.FC = () => {
     setSelectedProjectId,
     setIsCreateTaskOpen,
     openEditProject,
-    deleteProject
+    deleteProject,
+    openProjectChannel
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'kanban' | 'list' | 'calendar' | 'assets'>('kanban');
   const [filterAssignee, setFilterAssignee] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const project = projects.find(p => p.id === selectedProjectId) || projects[0];
 
   if (!project) {
     return (
-      <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 m-6">
+      <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 m-6 text-right" dir="rtl">
         <p className="text-slate-600 font-bold">پروژه‌ای انتخاب نشده یا یافت نشد.</p>
         <button
           onClick={() => setActiveView('projects')}
@@ -66,8 +70,15 @@ export const ProjectDetailView: React.FC = () => {
 
   const canManageProject = currentUser.role === 'admin' || currentUser.id === project.projectManagerId;
 
+  const handleConfirmDelete = () => {
+    deleteProject(project.id);
+    setIsDeleteDialogOpen(false);
+    setSelectedProjectId(null);
+    setActiveView('projects');
+  };
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 text-right">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 text-right" dir="rtl">
       {/* Back button */}
       <button
         onClick={() => {
@@ -122,6 +133,7 @@ export const ProjectDetailView: React.FC = () => {
           {/* Action buttons & Manager Card */}
           <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-end gap-3 shrink-0">
             <div className="flex items-center gap-2 flex-wrap">
+              {/* Add task button */}
               <button
                 id="project-add-task-btn"
                 onClick={() => setIsCreateTaskOpen(true)}
@@ -131,6 +143,17 @@ export const ProjectDetailView: React.FC = () => {
                 <span>وظیفه جدید</span>
               </button>
 
+              {/* Project Chat Channel */}
+              <button
+                onClick={() => openProjectChannel(project.id)}
+                title="ورود به کانال گفتگوی چت این پروژه"
+                className="px-3.5 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>کانال چت پروژه</span>
+              </button>
+
+              {/* Edit Project button */}
               <button
                 onClick={() => openEditProject(project)}
                 title="ویرایش و تنظیمات پروژه"
@@ -140,9 +163,10 @@ export const ProjectDetailView: React.FC = () => {
                 <span>ویرایش پروژه</span>
               </button>
 
+              {/* Delete Project button */}
               {canManageProject && (
                 <button
-                  onClick={() => openEditProject(project)}
+                  onClick={() => setIsDeleteDialogOpen(true)}
                   title="حذف پروژه"
                   className="p-2.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                 >
@@ -324,6 +348,47 @@ export const ProjectDetailView: React.FC = () => {
           <ProjectAssetsTab projectId={project.id} />
         )}
       </div>
+
+      {/* Delete Project Confirmation Dialog */}
+      {isDeleteDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95 duration-200 text-right">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-extrabold text-slate-900 text-base">
+                حذف پروژه از سامانه تدبیر
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                آیا از حذف قطعی پروژه <span className="font-bold text-slate-900">«{project.name}» [{project.key}]</span> اطمینان دارید؟
+              </p>
+              <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-[11px] text-rose-700 leading-relaxed">
+                تمام وظایف، تسک‌ها، لاگ‌ها و مستندات مربوط به این پروژه به طور دائم حذف خواهند شد.
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors cursor-pointer"
+              >
+                انصراف
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>بله، حذف قطعی</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

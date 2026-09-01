@@ -2,12 +2,18 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   User, Project, Task, Team, AppNotification, ActiveView, TaskStatus, Role, Priority, ProjectTemplate, ActivityLog, ActivityType, SystemRole, UserStatus,
-  DigitalAsset, AssetFolder, DamSubView, AssetCategory, AssetPermissionLevel, AssetAccessRight, AssetVersion, AssetActivity, AssetComment
+  DigitalAsset, AssetFolder, DamSubView, AssetCategory, AssetPermissionLevel, AssetAccessRight, AssetVersion, AssetActivity, AssetComment,
+  Conversation, ChatMessage, ChatType, ChatFilterCategory, TaskReference, ProjectReference, ChatAttachment, ConversationRole, ConversationMember,
+  Idea, IdeaVote, IdeaVoteOption, IdeaComment, IdeaActivity, ThinkTankMeeting, MeetingActionItem, ThinkTankMeetingAgendaItem,
+  SecretariatLetter, LetterReferral, LetterWorkflowStep, LetterType, LetterClassification, LetterUrgency, LetterStatus, ReferralActionType, SecretariatResolution, ResolutionStatus, ArchiveDossier, ArchiveCategory
 } from '../types';
 import { 
   INITIAL_USERS, INITIAL_PROJECTS, INITIAL_TASKS, INITIAL_TEAMS, INITIAL_NOTIFICATIONS, INITIAL_TEMPLATES, INITIAL_ACTIVITIES, INITIAL_ROLES, SYSTEM_PERMISSIONS 
 } from '../data/initialData';
 import { INITIAL_ASSETS, INITIAL_FOLDERS } from '../data/initialAssets';
+import { INITIAL_CONVERSATIONS, INITIAL_MESSAGES } from '../data/initialChatData';
+import { INITIAL_IDEAS, INITIAL_THINK_TANK_MEETINGS } from '../data/initialThinkTankData';
+import { INITIAL_LETTERS, INITIAL_RESOLUTIONS, INITIAL_ARCHIVE_DOSSIERS } from '../data/initialSecretariatData';
 
 interface AppContextType {
   currentUser: User;
@@ -160,6 +166,8 @@ interface AppContextType {
   // Digital Asset Management (DAM) Operations
   uploadAsset: (assetData: Partial<DigitalAsset> & { title: string; fileName: string; size: number }) => DigitalAsset;
   uploadNewVersion: (assetId: string, versionData: { fileName: string; size: number; url?: string; changelog: string }) => void;
+  deleteAssetVersion: (assetId: string, versionId: string) => void;
+  revertToAssetVersion: (assetId: string, versionId: string) => void;
   updateAsset: (assetId: string, updates: Partial<DigitalAsset>) => void;
   deleteAsset: (assetId: string, permanent?: boolean) => void;
   restoreAsset: (assetId: string) => void;
@@ -181,6 +189,85 @@ interface AppContextType {
   updateFolder: (folderId: string, updates: Partial<AssetFolder>) => void;
   deleteFolder: (folderId: string) => void;
   toggleFolderFavorite: (folderId: string) => void;
+
+  // Messaging & Chat System
+  conversations: Conversation[];
+  messages: ChatMessage[];
+  activeConversationId: string | null;
+  setActiveConversationId: (id: string | null) => void;
+  chatFilter: ChatFilterCategory;
+  setChatFilter: (filter: ChatFilterCategory) => void;
+  chatSearchQuery: string;
+  setChatSearchQuery: (query: string) => void;
+  sendMessage: (data: {
+    conversationId: string;
+    text: string;
+    replyToMessageId?: string;
+    attachments?: ChatAttachment[];
+    taskRef?: TaskReference;
+    projectRef?: ProjectReference;
+  }) => ChatMessage;
+  editMessage: (messageId: string, newText: string) => void;
+  deleteMessage: (messageId: string) => void;
+  togglePinMessage: (messageId: string) => void;
+  toggleStarMessage: (messageId: string) => void;
+  toggleMessageReaction: (messageId: string, emoji: string) => void;
+  createConversation: (data: Partial<Conversation> & { name: string; type: ChatType; memberIds: string[] }) => Conversation;
+  updateConversation: (convId: string, updates: Partial<Conversation>) => void;
+  addConversationMembers: (convId: string, memberIds: string[]) => void;
+  removeConversationMember: (convId: string, userId: string) => void;
+  updateMemberRole: (convId: string, userId: string, role: ConversationRole) => void;
+  toggleMuteConversation: (convId: string) => void;
+  startDirectChatWithUser: (targetUserId: string) => string;
+  openProjectChannel: (projectId: string) => string;
+
+  // Think Tank (اتاق فکر)
+  ideas: Idea[];
+  thinkTankMeetings: ThinkTankMeeting[];
+  selectedIdeaId: string | null;
+  setSelectedIdeaId: (id: string | null) => void;
+  selectedMeetingId: string | null;
+  setSelectedMeetingId: (id: string | null) => void;
+  addIdea: (ideaData: Partial<Idea> & { title: string; problemSolved: string; proposedSolution: string }) => Idea;
+  updateIdea: (ideaId: string, updates: Partial<Idea>) => void;
+  deleteIdea: (ideaId: string) => void;
+  voteIdea: (ideaId: string, option: IdeaVoteOption, comment?: string) => void;
+  votePollOption: (ideaId: string, optionId: string) => void;
+  addIdeaComment: (ideaId: string, text: string, replyToId?: string, assetIds?: string[]) => void;
+  toggleIdeaCommentReaction: (ideaId: string, commentId: string, emoji: string) => void;
+  createIdeaPoll: (ideaId: string, question: string, options: string[]) => void;
+  convertIdeaToProject: (ideaId: string, customData?: { name?: string; key?: string; description?: string }) => Project;
+  convertIdeaToTask: (ideaId: string, projectId: string, title?: string) => Task;
+  addThinkTankMeeting: (meetingData: Partial<ThinkTankMeeting> & { title: string; date: string; time: string }) => ThinkTankMeeting;
+  updateThinkTankMeeting: (meetingId: string, updates: Partial<ThinkTankMeeting>) => void;
+  deleteThinkTankMeeting: (meetingId: string) => void;
+  addMeetingMinutes: (meetingId: string, minutes: string, decisions: string[], actionItems?: MeetingActionItem[]) => void;
+  convertActionItemToTask: (meetingId: string, actionItemId: string, projectId: string) => Task;
+
+  // Secretariat (دبیرخانه)
+  secretariatLetters: SecretariatLetter[];
+  secretariatResolutions: SecretariatResolution[];
+  archiveDossiers: ArchiveDossier[];
+  selectedLetterId: string | null;
+  setSelectedLetterId: (id: string | null) => void;
+  selectedResolutionId: string | null;
+  setSelectedResolutionId: (id: string | null) => void;
+  addLetter: (letterData: Partial<SecretariatLetter> & { subject: string; content: string; type: LetterType; sender: string; recipient: string }) => SecretariatLetter;
+  updateLetter: (letterId: string, updates: Partial<SecretariatLetter>) => void;
+  deleteLetter: (letterId: string) => void;
+  referLetter: (letterId: string, referralData: { toUserId?: string; toTeamId?: string; department?: string; actionType: ReferralActionType; instructions: string; deadline: string }) => void;
+  updateReferralStatus: (letterId: string, referralId: string, status: 'pending' | 'in_progress' | 'completed' | 'rejected', responseNotes?: string) => void;
+  convertReferralToTask: (letterId: string, referralId: string, projectId: string) => Task;
+  addLetterWorkflowStep: (letterId: string, step: { stageName: string; action: string; notes?: string }) => void;
+  replyLetter: (originalLetterId: string, replyData: Partial<SecretariatLetter> & { subject: string; content: string }) => SecretariatLetter;
+  archiveLetter: (letterId: string, dossierId: string, boxLocation?: string) => void;
+  addResolution: (resData: Partial<SecretariatResolution> & { title: string; content: string; deadline: string; responsibleUserId: string }) => SecretariatResolution;
+  updateResolution: (resId: string, updates: Partial<SecretariatResolution>) => void;
+  deleteResolution: (resId: string) => void;
+  convertResolutionToTask: (resolutionId: string, projectId: string) => Task;
+  addArchiveDossier: (dossierData: Partial<ArchiveDossier> & { title: string; category: ArchiveCategory; location: string }) => ArchiveDossier;
+  updateArchiveDossier: (dossierId: string, updates: Partial<ArchiveDossier>) => void;
+  deleteArchiveDossier: (dossierId: string) => void;
 
   // Activity Feed Operations
   logActivity: (activity: Omit<ActivityLog, 'id' | 'timestamp'> & { timestamp?: string }) => void;
@@ -292,6 +379,82 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [pending2FAUser, setPending2FAUser] = useState<User | null>(null);
+
+  // Messaging & Chat State
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}conversations`);
+    return saved ? JSON.parse(saved) : INITIAL_CONVERSATIONS;
+  });
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}messages`);
+    return saved ? JSON.parse(saved) : INITIAL_MESSAGES;
+  });
+
+  const [activeConversationId, setActiveConversationId] = useState<string | null>('conv-dm-1');
+  const [chatFilter, setChatFilter] = useState<ChatFilterCategory>('all');
+  const [chatSearchQuery, setChatSearchQuery] = useState<string>('');
+
+  // Think Tank (اتاق فکر) State
+  const [ideas, setIdeas] = useState<Idea[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}ideas`);
+    return saved ? JSON.parse(saved) : INITIAL_IDEAS;
+  });
+
+  const [thinkTankMeetings, setThinkTankMeetings] = useState<ThinkTankMeeting[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}thinktank_meetings`);
+    return saved ? JSON.parse(saved) : INITIAL_THINK_TANK_MEETINGS;
+  });
+
+  const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
+
+  // Secretariat (دبیرخانه) State
+  const [secretariatLetters, setSecretariatLetters] = useState<SecretariatLetter[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}secretariat_letters`);
+    return saved ? JSON.parse(saved) : INITIAL_LETTERS;
+  });
+
+  const [secretariatResolutions, setSecretariatResolutions] = useState<SecretariatResolution[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}secretariat_resolutions`);
+    return saved ? JSON.parse(saved) : INITIAL_RESOLUTIONS;
+  });
+
+  const [archiveDossiers, setArchiveDossiers] = useState<ArchiveDossier[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}archive_dossiers`);
+    return saved ? JSON.parse(saved) : INITIAL_ARCHIVE_DOSSIERS;
+  });
+
+  const [selectedLetterId, setSelectedLetterId] = useState<string | null>(null);
+  const [selectedResolutionId, setSelectedResolutionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}conversations`, JSON.stringify(conversations));
+  }, [conversations]);
+
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}messages`, JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}ideas`, JSON.stringify(ideas));
+  }, [ideas]);
+
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}thinktank_meetings`, JSON.stringify(thinkTankMeetings));
+  }, [thinkTankMeetings]);
+
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}secretariat_letters`, JSON.stringify(secretariatLetters));
+  }, [secretariatLetters]);
+
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}secretariat_resolutions`, JSON.stringify(secretariatResolutions));
+  }, [secretariatResolutions]);
+
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}archive_dossiers`, JSON.stringify(archiveDossiers));
+  }, [archiveDossiers]);
 
   const openEditProject = (proj: Project) => {
     setProjectToEdit(proj);
@@ -1683,6 +1846,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const deleteAssetVersion = (assetId: string, versionId: string) => {
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    setAssets(prev => prev.map(asset => {
+      if (asset.id !== assetId) return asset;
+      const targetVersion = asset.versions.find(v => v.id === versionId);
+      if (!targetVersion) return asset;
+      if (asset.versions.length <= 1) {
+        return asset; // cannot delete only remaining version
+      }
+      const remainingVersions = asset.versions.filter(v => v.id !== versionId);
+      remainingVersions.sort((a, b) => b.versionNumber - a.versionNumber);
+      const topVersion = remainingVersions[0];
+
+      const newActivity: AssetActivity = {
+        id: `act-${Date.now()}`,
+        userId: currentUser.id,
+        action: `نسخه ${targetVersion.versionNumber} فایل را از سیستم حذف کرد`,
+        timestamp: dateStr,
+        details: `نسخه ${targetVersion.versionNumber} (${targetVersion.fileName}) حذف شد.`
+      };
+
+      return {
+        ...asset,
+        currentVersion: topVersion.versionNumber,
+        fileName: topVersion.fileName,
+        size: topVersion.size,
+        sizeFormatted: topVersion.sizeFormatted,
+        url: topVersion.url || asset.url,
+        updatedAt: dateStr,
+        versions: remainingVersions,
+        activities: [newActivity, ...asset.activities]
+      };
+    }));
+
+    sendNotification({
+      userId: currentUser.id,
+      title: 'حذف نسخه فایل',
+      message: 'نسخه مورد نظر از سیستم حذف شد.',
+      type: 'system'
+    });
+  };
+
+  const revertToAssetVersion = (assetId: string, versionId: string) => {
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    setAssets(prev => prev.map(asset => {
+      if (asset.id !== assetId) return asset;
+      const targetVersion = asset.versions.find(v => v.id === versionId);
+      if (!targetVersion) return asset;
+
+      const newActivity: AssetActivity = {
+        id: `act-${Date.now()}`,
+        userId: currentUser.id,
+        action: `فایل را به نسخه ${targetVersion.versionNumber} بازگردانی کرد`,
+        timestamp: dateStr,
+        details: `نسخه فعال به v${targetVersion.versionNumber} (${targetVersion.fileName}) تغییر یافت.`
+      };
+
+      return {
+        ...asset,
+        currentVersion: targetVersion.versionNumber,
+        fileName: targetVersion.fileName,
+        size: targetVersion.size,
+        sizeFormatted: targetVersion.sizeFormatted,
+        url: targetVersion.url || asset.url,
+        updatedAt: dateStr,
+        activities: [newActivity, ...asset.activities]
+      };
+    }));
+
+    sendNotification({
+      userId: currentUser.id,
+      title: 'بازگردانی نسخه فایل',
+      message: 'فایل به نسخه انتخابی بازگردانی شد.',
+      type: 'system'
+    });
+  };
+
   const updateAsset = (assetId: string, updates: Partial<DigitalAsset>) => {
     const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
     setAssets(prev => prev.map(asset => {
@@ -1846,6 +2086,1010 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setFolders(prev => prev.map(f => f.id === folderId ? { ...f, isFavorite: !f.isFavorite } : f));
   };
 
+  // Messaging & Chat Operations
+  const sendMessage = (data: {
+    conversationId: string;
+    text: string;
+    replyToMessageId?: string;
+    attachments?: ChatAttachment[];
+    taskRef?: TaskReference;
+    projectRef?: ProjectReference;
+  }) => {
+    const date = new Date();
+    const timeStr = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(date);
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(date);
+    
+    let replyToMsgObj = undefined;
+    if (data.replyToMessageId) {
+      const parent = messages.find(m => m.id === data.replyToMessageId);
+      if (parent) {
+        const sender = users.find(u => u.id === parent.senderId);
+        replyToMsgObj = {
+          id: parent.id,
+          senderName: sender ? sender.name : 'کاربر',
+          text: parent.text ? parent.text.slice(0, 80) : 'پیوست'
+        };
+      }
+    }
+
+    const newMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      conversationId: data.conversationId,
+      senderId: currentUser.id,
+      text: data.text,
+      timestamp: timeStr,
+      createdAt: date.toISOString(),
+      deliveryStatus: 'sent',
+      replyToMessageId: data.replyToMessageId,
+      replyToMessage: replyToMsgObj,
+      attachments: data.attachments,
+      taskRef: data.taskRef,
+      projectRef: data.projectRef,
+      reactions: []
+    };
+
+    setMessages(prev => [...prev, newMsg]);
+
+    const previewText = data.text 
+      ? (currentUser.role === 'admin' ? `${currentUser.name}: ${data.text}` : data.text)
+      : data.attachments && data.attachments.length > 0 
+      ? `[پیوست ${data.attachments[0].name}]`
+      : data.taskRef
+      ? `[ارجاع به تسک ${data.taskRef.title}]`
+      : data.projectRef
+      ? `[ارجاع به پروژه ${data.projectRef.name}]`
+      : 'پیام جدید';
+
+    setConversations(prev => prev.map(conv => {
+      if (conv.id !== data.conversationId) return conv;
+      return {
+        ...conv,
+        lastMessage: {
+          text: previewText,
+          timestamp: timeStr,
+          senderId: currentUser.id,
+          senderName: currentUser.name
+        },
+        updatedAt: dateStr
+      };
+    }));
+
+    setTimeout(() => {
+      setMessages(prev => prev.map(m => m.id === newMsg.id ? { ...m, deliveryStatus: 'delivered' } : m));
+    }, 600);
+    setTimeout(() => {
+      setMessages(prev => prev.map(m => m.id === newMsg.id ? { ...m, deliveryStatus: 'read' } : m));
+    }, 1500);
+
+    return newMsg;
+  };
+
+  const editMessage = (messageId: string, newText: string) => {
+    const timeStr = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      return {
+        ...m,
+        text: newText,
+        isEdited: true,
+        editedAt: timeStr
+      };
+    }));
+  };
+
+  const deleteMessage = (messageId: string) => {
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+  };
+
+  const togglePinMessage = (messageId: string) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const willPin = !m.isPinned;
+      return { ...m, isPinned: willPin };
+    }));
+
+    const msg = messages.find(m => m.id === messageId);
+    if (msg) {
+      setConversations(prev => prev.map(c => {
+        if (c.id !== msg.conversationId) return c;
+        const currentPins = c.pinnedMessageIds || [];
+        const isPinned = currentPins.includes(messageId);
+        const newPins = isPinned 
+          ? currentPins.filter(id => id !== messageId)
+          : [...currentPins, messageId];
+        return { ...c, pinnedMessageIds: newPins };
+      }));
+    }
+  };
+
+  const toggleStarMessage = (messageId: string) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      return { ...m, isStarred: !m.isStarred };
+    }));
+  };
+
+  const toggleMessageReaction = (messageId: string, emoji: string) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const reactions = m.reactions ? [...m.reactions] : [];
+      const existingReactionIndex = reactions.findIndex(r => r.emoji === emoji);
+
+      if (existingReactionIndex >= 0) {
+        const existing = reactions[existingReactionIndex];
+        const userHasReacted = existing.userIds.includes(currentUser.id);
+        if (userHasReacted) {
+          const updatedUserIds = existing.userIds.filter(uid => uid !== currentUser.id);
+          if (updatedUserIds.length === 0) {
+            reactions.splice(existingReactionIndex, 1);
+          } else {
+            reactions[existingReactionIndex] = {
+              ...existing,
+              count: updatedUserIds.length,
+              userIds: updatedUserIds
+            };
+          }
+        } else {
+          reactions[existingReactionIndex] = {
+            ...existing,
+            count: existing.count + 1,
+            userIds: [...existing.userIds, currentUser.id]
+          };
+        }
+      } else {
+        reactions.push({
+          emoji,
+          count: 1,
+          userIds: [currentUser.id]
+        });
+      }
+
+      return {
+        ...m,
+        reactions
+      };
+    }));
+  };
+
+  const createConversation = (data: Partial<Conversation> & { name: string; type: ChatType; memberIds: string[] }) => {
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date());
+    const memberObjects: ConversationMember[] = data.memberIds.map(uid => ({
+      userId: uid,
+      role: uid === currentUser.id ? 'owner' : 'member',
+      joinedAt: dateStr
+    }));
+    if (!data.memberIds.includes(currentUser.id)) {
+      memberObjects.push({
+        userId: currentUser.id,
+        role: 'owner',
+        joinedAt: dateStr
+      });
+      data.memberIds.push(currentUser.id);
+    }
+
+    const newConv: Conversation = {
+      id: `conv-${Date.now()}`,
+      type: data.type,
+      name: data.name,
+      avatar: data.avatar,
+      color: data.color || '#6366f1',
+      description: data.description || '',
+      projectId: data.projectId,
+      teamId: data.teamId,
+      members: memberObjects,
+      memberIds: data.memberIds,
+      unreadCount: 0,
+      isMuted: false,
+      pinnedMessageIds: [],
+      createdAt: dateStr,
+      updatedAt: 'همین الان'
+    };
+
+    setConversations(prev => [newConv, ...prev]);
+    setActiveConversationId(newConv.id);
+    setActiveView('messages');
+    return newConv;
+  };
+
+  const updateConversation = (convId: string, updates: Partial<Conversation>) => {
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, ...updates } : c));
+  };
+
+  const addConversationMembers = (convId: string, newMemberIds: string[]) => {
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date());
+    setConversations(prev => prev.map(c => {
+      if (c.id !== convId) return c;
+      const existingIds = new Set(c.memberIds);
+      const toAdd = newMemberIds.filter(id => !existingIds.has(id));
+      const newMemberObjs: ConversationMember[] = toAdd.map(id => ({
+        userId: id,
+        role: 'member',
+        joinedAt: dateStr
+      }));
+      return {
+        ...c,
+        memberIds: [...c.memberIds, ...toAdd],
+        members: [...c.members, ...newMemberObjs]
+      };
+    }));
+  };
+
+  const removeConversationMember = (convId: string, userId: string) => {
+    setConversations(prev => prev.map(c => {
+      if (c.id !== convId) return c;
+      return {
+        ...c,
+        memberIds: c.memberIds.filter(id => id !== userId),
+        members: c.members.filter(m => m.userId !== userId)
+      };
+    }));
+  };
+
+  const updateMemberRole = (convId: string, userId: string, role: ConversationRole) => {
+    setConversations(prev => prev.map(c => {
+      if (c.id !== convId) return c;
+      return {
+        ...c,
+        members: c.members.map(m => m.userId === userId ? { ...m, role } : m)
+      };
+    }));
+  };
+
+  const toggleMuteConversation = (convId: string) => {
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, isMuted: !c.isMuted } : c));
+  };
+
+  const startDirectChatWithUser = (targetUserId: string): string => {
+    const existing = conversations.find(
+      c => c.type === 'direct' && c.memberIds.includes(currentUser.id) && c.memberIds.includes(targetUserId)
+    );
+    if (existing) {
+      setActiveConversationId(existing.id);
+      setActiveView('messages');
+      return existing.id;
+    }
+    const targetUser = users.find(u => u.id === targetUserId);
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date());
+    const newConv: Conversation = {
+      id: `conv-dm-${Date.now()}`,
+      type: 'direct',
+      name: targetUser ? targetUser.name : 'گفتگوی خصوصی',
+      avatar: targetUser ? targetUser.avatar : undefined,
+      description: targetUser ? targetUser.title : '',
+      members: [
+        { userId: currentUser.id, role: 'owner', joinedAt: dateStr },
+        { userId: targetUserId, role: 'member', joinedAt: dateStr }
+      ],
+      memberIds: [currentUser.id, targetUserId],
+      unreadCount: 0,
+      createdAt: dateStr,
+      updatedAt: 'همین الان'
+    };
+    setConversations(prev => [newConv, ...prev]);
+    setActiveConversationId(newConv.id);
+    setActiveView('messages');
+    return newConv.id;
+  };
+
+  const openProjectChannel = (projectId: string): string => {
+    const existing = conversations.find(c => c.type === 'channel' && c.projectId === projectId);
+    if (existing) {
+      setActiveConversationId(existing.id);
+      setActiveView('messages');
+      return existing.id;
+    }
+    const proj = projects.find(p => p.id === projectId);
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date());
+    const newChan = createConversation({
+      type: 'channel',
+      name: proj ? `کانال پروژه ${proj.name} [${proj.key}]` : 'کانال پروژه',
+      color: proj ? proj.color : '#6366f1',
+      description: proj ? proj.description : 'کانال گفتگوی رسمی پروژه',
+      projectId,
+      memberIds: proj ? proj.memberIds : [currentUser.id]
+    });
+    setActiveConversationId(newChan.id);
+    setActiveView('messages');
+    return newChan.id;
+  };
+
+  // ==========================================
+  // Think Tank (اتاق فکر) Operations
+  // ==========================================
+  const addIdea = (ideaData: Partial<Idea> & { title: string; problemSolved: string; proposedSolution: string }): Idea => {
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    const nextCode = `IDEA-${100 + ideas.length + 1}`;
+    const newIdea: Idea = {
+      id: `idea-${Date.now()}`,
+      code: nextCode,
+      title: ideaData.title,
+      description: ideaData.description || '',
+      problemSolved: ideaData.problemSolved,
+      proposedSolution: ideaData.proposedSolution,
+      creatorId: currentUser.id,
+      teamId: ideaData.teamId,
+      projectId: ideaData.projectId,
+      priority: ideaData.priority || 'medium',
+      status: 'submitted',
+      tags: ideaData.tags || ['نوآوری'],
+      assetIds: ideaData.assetIds || [],
+      comments: [],
+      activities: [
+        {
+          id: `act-${Date.now()}`,
+          userId: currentUser.id,
+          action: `ایده را با عنوان "${ideaData.title}" در اتاق فکر ثبت کرد.`,
+          timestamp: dateStr,
+          type: 'edit'
+        }
+      ],
+      votes: [
+        {
+          id: `vote-${Date.now()}`,
+          userId: currentUser.id,
+          option: 'agree',
+          timestamp: dateStr,
+          comment: 'پیشنهاد اولیه طراح ایده'
+        }
+      ],
+      hasPoll: !!ideaData.hasPoll,
+      pollQuestion: ideaData.pollQuestion,
+      pollOptions: ideaData.pollOptions,
+      targetDepartment: ideaData.targetDepartment,
+      estimatedBudget: ideaData.estimatedBudget,
+      estimatedEffort: ideaData.estimatedEffort,
+      createdAt: dateStr,
+      updatedAt: dateStr
+    };
+
+    setIdeas(prev => [newIdea, ...prev]);
+    sendNotification({
+      userId: currentUser.id,
+      title: '💡 ایده جدید در اتاق فکر',
+      message: `${currentUser.name} ایده جدیدی با عنوان "${newIdea.title}" ثبت کرد.`,
+      type: 'system'
+    });
+    logActivity({
+      type: 'comment',
+      action: `ثبت ایده در اتاق فکر (${newIdea.code})`,
+      details: `ایده ${newIdea.code} توسط ${currentUser.name} ثبت شد.`,
+      userId: currentUser.id
+    });
+    return newIdea;
+  };
+
+  const updateIdea = (ideaId: string, updates: Partial<Idea>) => {
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    setIdeas(prev => prev.map(item => {
+      if (item.id !== ideaId) return item;
+      const statusChanged = updates.status && updates.status !== item.status;
+      const newActs = [...item.activities];
+      if (statusChanged) {
+        newActs.push({
+          id: `act-${Date.now()}`,
+          userId: currentUser.id,
+          action: `وضعیت ایده را به «${updates.status}» تغییر داد.`,
+          timestamp: dateStr,
+          type: 'status_change'
+        });
+      }
+      return {
+        ...item,
+        ...updates,
+        activities: newActs,
+        updatedAt: dateStr
+      };
+    }));
+  };
+
+  const deleteIdea = (ideaId: string) => {
+    setIdeas(prev => prev.filter(item => item.id !== ideaId));
+    if (selectedIdeaId === ideaId) setSelectedIdeaId(null);
+  };
+
+  const voteIdea = (ideaId: string, option: IdeaVoteOption, comment?: string) => {
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    setIdeas(prev => prev.map(item => {
+      if (item.id !== ideaId) return item;
+      const existingVoteIdx = item.votes.findIndex(v => v.userId === currentUser.id);
+      let updatedVotes = [...item.votes];
+      if (existingVoteIdx >= 0) {
+        updatedVotes[existingVoteIdx] = {
+          ...updatedVotes[existingVoteIdx],
+          option,
+          comment: comment !== undefined ? comment : updatedVotes[existingVoteIdx].comment,
+          timestamp: dateStr
+        };
+      } else {
+        updatedVotes.push({
+          id: `vote-${Date.now()}`,
+          userId: currentUser.id,
+          option,
+          timestamp: dateStr,
+          comment
+        });
+      }
+      const optionLabels: Record<IdeaVoteOption, string> = {
+        agree: 'موافقت',
+        disagree: 'مخالفت',
+        needs_investigation: 'نیاز به بررسی بیشتر'
+      };
+      const newAct: IdeaActivity = {
+        id: `act-${Date.now()}`,
+        userId: currentUser.id,
+        action: `رأی «${optionLabels[option]}» خود را ثبت کرد.`,
+        timestamp: dateStr,
+        type: 'vote'
+      };
+      return {
+        ...item,
+        votes: updatedVotes,
+        activities: [...item.activities, newAct],
+        updatedAt: dateStr
+      };
+    }));
+  };
+
+  const votePollOption = (ideaId: string, optionId: string) => {
+    setIdeas(prev => prev.map(item => {
+      if (item.id !== ideaId || !item.pollOptions) return item;
+      const updatedOpts = item.pollOptions.map(opt => {
+        const withoutUser = opt.votes.filter(uId => uId !== currentUser.id);
+        if (opt.id === optionId) {
+          return { ...opt, votes: [...withoutUser, currentUser.id] };
+        }
+        return { ...opt, votes: withoutUser };
+      });
+      return { ...item, pollOptions: updatedOpts };
+    }));
+  };
+
+  const addIdeaComment = (ideaId: string, text: string, replyToId?: string, assetIds?: string[]) => {
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    setIdeas(prev => prev.map(item => {
+      if (item.id !== ideaId) return item;
+      let replyToAuthor: string | undefined;
+      let replyToText: string | undefined;
+      if (replyToId) {
+        const targetComm = item.comments.find(c => c.id === replyToId);
+        if (targetComm) {
+          const authorUser = users.find(u => u.id === targetComm.userId);
+          replyToAuthor = authorUser ? authorUser.name : 'کاربر';
+          replyToText = targetComm.text.slice(0, 45) + (targetComm.text.length > 45 ? '...' : '');
+        }
+      }
+      const newComment: IdeaComment = {
+        id: `comm-${Date.now()}`,
+        userId: currentUser.id,
+        text,
+        timestamp: dateStr,
+        replyToId,
+        replyToAuthor,
+        replyToText,
+        reactions: [],
+        assetIds
+      };
+      const newAct: IdeaActivity = {
+        id: `act-${Date.now()}`,
+        userId: currentUser.id,
+        action: 'دیدگاه جدیدی ثبت کرد.',
+        timestamp: dateStr,
+        type: 'comment'
+      };
+      return {
+        ...item,
+        comments: [...item.comments, newComment],
+        activities: [...item.activities, newAct],
+        updatedAt: dateStr
+      };
+    }));
+  };
+
+  const toggleIdeaCommentReaction = (ideaId: string, commentId: string, emoji: string) => {
+    setIdeas(prev => prev.map(item => {
+      if (item.id !== ideaId) return item;
+      const updatedComments = item.comments.map(c => {
+        if (c.id !== commentId) return c;
+        const rx = c.reactions || [];
+        const existing = rx.find(r => r.emoji === emoji);
+        let newRx;
+        if (existing) {
+          if (existing.userIds.includes(currentUser.id)) {
+            const nextUsers = existing.userIds.filter(u => u !== currentUser.id);
+            if (nextUsers.length === 0) {
+              newRx = rx.filter(r => r.emoji !== emoji);
+            } else {
+              newRx = rx.map(r => r.emoji === emoji ? { ...r, userIds: nextUsers, count: nextUsers.length } : r);
+            }
+          } else {
+            newRx = rx.map(r => r.emoji === emoji ? { ...r, userIds: [...r.userIds, currentUser.id], count: r.count + 1 } : r);
+          }
+        } else {
+          newRx = [...rx, { emoji, userIds: [currentUser.id], count: 1 }];
+        }
+        return { ...c, reactions: newRx };
+      });
+      return { ...item, comments: updatedComments };
+    }));
+  };
+
+  const createIdeaPoll = (ideaId: string, question: string, options: string[]) => {
+    const pollOptions = options.map((opt, idx) => ({
+      id: `opt-${Date.now()}-${idx}`,
+      text: opt,
+      votes: []
+    }));
+    updateIdea(ideaId, { hasPoll: true, pollQuestion: question, pollOptions });
+  };
+
+  const convertIdeaToProject = (ideaId: string, customData?: { name?: string; key?: string; description?: string }): Project => {
+    const targetIdea = ideas.find(i => i.id === ideaId);
+    if (!targetIdea) throw new Error('Idea not found');
+    const newProj = addProject({
+      name: customData?.name || `پروژه اجرایی: ${targetIdea.title}`,
+      key: customData?.key || targetIdea.code.replace('-', ''),
+      description: customData?.description || `${targetIdea.description}\n\nمسئله حل‌شده: ${targetIdea.problemSolved}\nراه‌حل: ${targetIdea.proposedSolution}`,
+      priority: targetIdea.priority,
+      status: 'planning',
+      projectManagerId: currentUser.id,
+      memberIds: [currentUser.id, targetIdea.creatorId]
+    });
+    updateIdea(ideaId, { status: 'in_progress', convertedProjectId: newProj.id });
+    triggerCelebration();
+    sendNotification({
+      userId: currentUser.id,
+      title: '🚀 تبدیل ایده به پروژه',
+      message: `ایده "${targetIdea.title}" با موفقیت به پروژه سازمانی تبدیل شد.`,
+      type: 'system',
+      linkProjectId: newProj.id
+    });
+    return newProj;
+  };
+
+  const convertIdeaToTask = (ideaId: string, projectId: string, title?: string): Task => {
+    const targetIdea = ideas.find(i => i.id === ideaId);
+    if (!targetIdea) throw new Error('Idea not found');
+    const newTask = addTask({
+      title: title || `پیاده‌سازی: ${targetIdea.title}`,
+      description: `خروجی اتاق فکر (${targetIdea.code}):\n${targetIdea.description}\n\nراه‌حل پیشنهادی:\n${targetIdea.proposedSolution}`,
+      projectId,
+      priority: targetIdea.priority,
+      assigneeId: targetIdea.creatorId,
+      status: 'todo',
+      tags: [...targetIdea.tags, 'اتاق فکر']
+    });
+    updateIdea(ideaId, { status: 'in_progress', convertedTaskId: newTask.id });
+    sendNotification({
+      userId: targetIdea.creatorId,
+      title: '📋 تبدیل ایده به وظیفه',
+      message: `ایده "${targetIdea.title}" به تسک در پروژه مربوطه تبدیل شد.`,
+      type: 'assignment',
+      linkTaskId: newTask.id
+    });
+    return newTask;
+  };
+
+  const addThinkTankMeeting = (meetingData: Partial<ThinkTankMeeting> & { title: string; date: string; time: string }): ThinkTankMeeting => {
+    const newMeeting: ThinkTankMeeting = {
+      id: `ttm-${Date.now()}`,
+      title: meetingData.title,
+      description: meetingData.description,
+      date: meetingData.date,
+      time: meetingData.time,
+      duration: meetingData.duration || '۶۰ دقیقه',
+      organizerId: currentUser.id,
+      attendeeIds: meetingData.attendeeIds || [currentUser.id],
+      agenda: meetingData.agenda || [],
+      relatedIdeaIds: meetingData.relatedIdeaIds || [],
+      assetIds: meetingData.assetIds || [],
+      status: 'scheduled',
+      locationType: meetingData.locationType || 'in_person',
+      locationDetails: meetingData.locationDetails,
+      decisions: [],
+      actionItems: [],
+      createdAt: new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date())
+    };
+    setThinkTankMeetings(prev => [newMeeting, ...prev]);
+    sendNotification({
+      userId: currentUser.id,
+      title: '📅 جلسه جدید اتاق فکر',
+      message: `جلسه "${newMeeting.title}" برای تاریخ ${newMeeting.date} ساعت ${newMeeting.time} هماهنگ شد.`,
+      type: 'system'
+    });
+    return newMeeting;
+  };
+
+  const updateThinkTankMeeting = (meetingId: string, updates: Partial<ThinkTankMeeting>) => {
+    setThinkTankMeetings(prev => prev.map(m => m.id === meetingId ? { ...m, ...updates } : m));
+  };
+
+  const deleteThinkTankMeeting = (meetingId: string) => {
+    setThinkTankMeetings(prev => prev.filter(m => m.id !== meetingId));
+    if (selectedMeetingId === meetingId) setSelectedMeetingId(null);
+  };
+
+  const addMeetingMinutes = (meetingId: string, minutes: string, decisions: string[], actionItems?: MeetingActionItem[]) => {
+    setThinkTankMeetings(prev => prev.map(m => {
+      if (m.id !== meetingId) return m;
+      return {
+        ...m,
+        status: 'completed',
+        minutesSummary: minutes,
+        decisions: decisions,
+        actionItems: actionItems || m.actionItems
+      };
+    }));
+    sendNotification({
+      userId: currentUser.id,
+      title: '📝 ثبت صورتجلسه اتاق فکر',
+      message: 'صورتجلسه و تصمیمات اتخاذ شده در جلسه با موفقیت نهایی و ذخیره گردید.',
+      type: 'system'
+    });
+  };
+
+  const convertActionItemToTask = (meetingId: string, actionItemId: string, projectId: string): Task => {
+    const meeting = thinkTankMeetings.find(m => m.id === meetingId);
+    const item = meeting?.actionItems?.find(a => a.id === actionItemId);
+    if (!item) throw new Error('Action item not found');
+    const newTask = addTask({
+      title: item.title,
+      description: `اقدام مصوب جلسه اتاق فکر: "${meeting?.title}"\nتاریخ جلسه: ${meeting?.date}`,
+      projectId,
+      assigneeId: item.assigneeId,
+      deadline: item.deadline,
+      priority: 'high',
+      status: 'todo',
+      tags: ['مصوبه اتاق فکر']
+    });
+    setThinkTankMeetings(prev => prev.map(m => {
+      if (m.id !== meetingId || !m.actionItems) return m;
+      return {
+        ...m,
+        actionItems: m.actionItems.map(a => a.id === actionItemId ? { ...a, status: 'converted', convertedTaskId: newTask.id } : a)
+      };
+    }));
+    sendNotification({
+      userId: item.assigneeId,
+      title: '✅ اقدام جلسه به تسک تبدیل شد',
+      message: `تسک "${item.title}" ایجاد و به مسئول مربوطه واگذار گردید.`,
+      type: 'assignment',
+      linkTaskId: newTask.id
+    });
+    return newTask;
+  };
+
+  // ==========================================
+  // Secretariat (دبیرخانه) Operations
+  // ==========================================
+  const addLetter = (letterData: Partial<SecretariatLetter> & { subject: string; content: string; type: LetterType; sender: string; recipient: string }): SecretariatLetter => {
+    const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date());
+    const timeStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    const count = secretariatLetters.length + 1;
+    const prefix = letterData.type === 'incoming' ? 'دب' : (letterData.type === 'outgoing' ? 'صاد' : 'داخ');
+    const letterNumber = `${letterData.type === 'incoming' ? 'وارده: ' : (letterData.type === 'outgoing' ? 'صادره: ' : 'داخلی: ')}${prefix}-۱۴۰۵/${count.toString().padStart(3, '0')}`;
+    const indicatNumber = `۱۴۰۵/${count.toString().padStart(3, '0')}`;
+
+    const newLetter: SecretariatLetter = {
+      id: `let-${Date.now()}`,
+      letterNumber,
+      indicatNumber,
+      type: letterData.type,
+      subject: letterData.subject,
+      content: letterData.content,
+      sender: letterData.sender,
+      senderUserId: letterData.senderUserId || (letterData.type === 'outgoing' ? currentUser.id : undefined),
+      recipient: letterData.recipient,
+      recipientUserId: letterData.recipientUserId,
+      ccList: letterData.ccList || [],
+      date: letterData.date || dateStr,
+      registeredAt: timeStr,
+      classification: letterData.classification || 'normal',
+      urgency: letterData.urgency || 'normal',
+      status: letterData.status || (letterData.type === 'outgoing' ? 'draft' : 'registered'),
+      responseDeadline: letterData.responseDeadline,
+      relatedLetterId: letterData.relatedLetterId,
+      assetIds: letterData.assetIds || [],
+      referrals: [],
+      workflow: [
+        {
+          id: `wf-${Date.now()}`,
+          userId: currentUser.id,
+          stageName: 'ثبت اولیه در دبیرخانه',
+          action: `نامه ${letterData.type === 'incoming' ? 'وارده' : 'صادره'} با شماره ${letterNumber} ثبت شد.`,
+          timestamp: timeStr,
+          status: 'completed'
+        }
+      ],
+      archiveDossierId: letterData.archiveDossierId,
+      archiveBox: letterData.archiveBox,
+      tags: letterData.tags || ['مکاتبات'],
+      createdAt: timeStr,
+      updatedAt: timeStr
+    };
+
+    setSecretariatLetters(prev => [newLetter, ...prev]);
+    sendNotification({
+      userId: currentUser.id,
+      title: `📬 ثبت نامه ${letterData.type === 'incoming' ? 'وارده' : 'صادره'} در دبیرخانه`,
+      message: `نامه با شماره ${letterNumber} با موضوع "${newLetter.subject}" ثبت شد.`,
+      type: 'system'
+    });
+    return newLetter;
+  };
+
+  const updateLetter = (letterId: string, updates: Partial<SecretariatLetter>) => {
+    const timeStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    setSecretariatLetters(prev => prev.map(l => l.id === letterId ? { ...l, ...updates, updatedAt: timeStr } : l));
+  };
+
+  const deleteLetter = (letterId: string) => {
+    setSecretariatLetters(prev => prev.filter(l => l.id !== letterId));
+    if (selectedLetterId === letterId) setSelectedLetterId(null);
+  };
+
+  const referLetter = (letterId: string, referralData: { toUserId?: string; toTeamId?: string; department?: string; actionType: ReferralActionType; instructions: string; deadline: string }) => {
+    const timeStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    const newRef: LetterReferral = {
+      id: `ref-${Date.now()}`,
+      letterId,
+      fromUserId: currentUser.id,
+      toUserId: referralData.toUserId,
+      toTeamId: referralData.toTeamId,
+      department: referralData.department,
+      actionType: referralData.actionType,
+      instructions: referralData.instructions,
+      deadline: referralData.deadline,
+      status: 'pending',
+      timestamp: timeStr
+    };
+
+    const actionLabels: Record<ReferralActionType, string> = {
+      review: 'بررسی و اظهار نظر',
+      action: 'اقدام لازم',
+      response: 'تهیه پاسخ رسمی',
+      info: 'جهت استحضار و اطلاع',
+      followup: 'پیگیری مستمر'
+    };
+
+    const targetUser = users.find(u => u.id === referralData.toUserId);
+    const targetName = targetUser ? targetUser.name : (referralData.department || 'واحد مربوطه');
+
+    const newWorkflowStep: LetterWorkflowStep = {
+      id: `wf-${Date.now()}`,
+      userId: currentUser.id,
+      stageName: 'ارجاع سازمانی',
+      action: `ارجاع به ${targetName} با دستور: ${actionLabels[referralData.actionType]}`,
+      notes: referralData.instructions,
+      timestamp: timeStr,
+      status: 'completed'
+    };
+
+    setSecretariatLetters(prev => prev.map(l => {
+      if (l.id !== letterId) return l;
+      return {
+        ...l,
+        status: 'referred',
+        referrals: [...l.referrals, newRef],
+        workflow: [...l.workflow, newWorkflowStep],
+        updatedAt: timeStr
+      };
+    }));
+
+    if (referralData.toUserId) {
+      sendNotification({
+        userId: referralData.toUserId,
+        title: '📨 ارجاع نامه اداری جدید',
+        message: `${currentUser.name} نامه‌ای را با دستور "${referralData.instructions}" به شما ارجاع داد.`,
+        type: 'assignment'
+      });
+    }
+  };
+
+  const updateReferralStatus = (letterId: string, referralId: string, status: 'pending' | 'in_progress' | 'completed' | 'rejected', responseNotes?: string) => {
+    const timeStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    setSecretariatLetters(prev => prev.map(l => {
+      if (l.id !== letterId) return l;
+      const updatedRefs = l.referrals.map(r => {
+        if (r.id !== referralId) return r;
+        return {
+          ...r,
+          status,
+          responseNotes: responseNotes || r.responseNotes,
+          completedAt: status === 'completed' ? timeStr : r.completedAt
+        };
+      });
+      const allCompleted = updatedRefs.every(r => r.status === 'completed');
+      return {
+        ...l,
+        status: allCompleted ? 'in_progress' : l.status,
+        referrals: updatedRefs,
+        updatedAt: timeStr
+      };
+    }));
+  };
+
+  const convertReferralToTask = (letterId: string, referralId: string, projectId: string): Task => {
+    const letter = secretariatLetters.find(l => l.id === letterId);
+    const referral = letter?.referrals.find(r => r.id === referralId);
+    if (!letter || !referral) throw new Error('Referral not found');
+
+    const newTask = addTask({
+      title: `اقدام نامه ${letter.letterNumber}: ${letter.subject}`,
+      description: `دستور ارجاع دبیرخانه:\n${referral.instructions}\n\nخلاصه نامه:\n${letter.content}`,
+      projectId,
+      assigneeId: referral.toUserId || currentUser.id,
+      deadline: referral.deadline,
+      priority: letter.urgency === 'immediate' ? 'urgent' : (letter.urgency === 'urgent' ? 'high' : 'medium'),
+      status: 'todo',
+      tags: ['دبیرخانه', letter.letterNumber]
+    });
+
+    setSecretariatLetters(prev => prev.map(l => {
+      if (l.id !== letterId) return l;
+      return {
+        ...l,
+        referrals: l.referrals.map(r => r.id === referralId ? { ...r, convertedTaskId: newTask.id } : r)
+      };
+    }));
+
+    sendNotification({
+      userId: referral.toUserId || currentUser.id,
+      title: '📌 ارجاع نامه به وظیفه تبدیل شد',
+      message: `تسک مربوط به نامه ${letter.letterNumber} در پروژه ایجاد شد.`,
+      type: 'assignment',
+      linkTaskId: newTask.id
+    });
+    return newTask;
+  };
+
+  const addLetterWorkflowStep = (letterId: string, step: { stageName: string; action: string; notes?: string }) => {
+    const timeStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+    const newStep: LetterWorkflowStep = {
+      id: `wf-${Date.now()}`,
+      userId: currentUser.id,
+      stageName: step.stageName,
+      action: step.action,
+      notes: step.notes,
+      timestamp: timeStr,
+      status: 'completed'
+    };
+    setSecretariatLetters(prev => prev.map(l => l.id === letterId ? { ...l, workflow: [...l.workflow, newStep], updatedAt: timeStr } : l));
+  };
+
+  const replyLetter = (originalLetterId: string, replyData: Partial<SecretariatLetter> & { subject: string; content: string }): SecretariatLetter => {
+    const orig = secretariatLetters.find(l => l.id === originalLetterId);
+    const newOutgoing = addLetter({
+      ...replyData,
+      type: 'outgoing',
+      subject: replyData.subject || (orig ? `پاسخ به: ${orig.subject}` : 'پاسخ نامه'),
+      recipient: replyData.recipient || (orig ? orig.sender : ''),
+      sender: 'سامانه تدبیر',
+      relatedLetterId: originalLetterId,
+      classification: orig?.classification || 'normal',
+      urgency: orig?.urgency || 'normal'
+    });
+    updateLetter(originalLetterId, { status: 'answered' });
+    addLetterWorkflowStep(originalLetterId, {
+      stageName: 'پاسخ رسمی',
+      action: `پاسخ رسمی با نامه صادره به شماره ${newOutgoing.letterNumber} ارسال گردید.`
+    });
+    return newOutgoing;
+  };
+
+  const archiveLetter = (letterId: string, dossierId: string, boxLocation?: string) => {
+    updateLetter(letterId, { status: 'archived', archiveDossierId: dossierId, archiveBox: boxLocation });
+    setArchiveDossiers(prev => prev.map(d => {
+      if (d.id !== dossierId) return d;
+      return {
+        ...d,
+        letterIds: d.letterIds.includes(letterId) ? d.letterIds : [...d.letterIds, letterId]
+      };
+    }));
+    addLetterWorkflowStep(letterId, {
+      stageName: 'بایگانی اسناد',
+      action: `نامه در پرونده بایگانی با کد ${dossierId} ذخیره شد.`
+    });
+  };
+
+  const addResolution = (resData: Partial<SecretariatResolution> & { title: string; content: string; deadline: string; responsibleUserId: string }): SecretariatResolution => {
+    const count = secretariatResolutions.length + 1;
+    const newRes: SecretariatResolution = {
+      id: `res-${Date.now()}`,
+      code: `مصوبه م-۱۴۰۵/${count.toString().padStart(2, '0')}`,
+      title: resData.title,
+      meetingId: resData.meetingId,
+      meetingTitle: resData.meetingTitle,
+      date: resData.date || new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date()),
+      content: resData.content,
+      responsibleUserId: resData.responsibleUserId,
+      department: resData.department,
+      deadline: resData.deadline,
+      status: 'approved',
+      taskIds: [],
+      assetIds: resData.assetIds || [],
+      notes: resData.notes,
+      createdAt: new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date())
+    };
+    setSecretariatResolutions(prev => [newRes, ...prev]);
+    sendNotification({
+      userId: resData.responsibleUserId || currentUser.id,
+      title: '⚖️ مصوبه سازمانی جدید ثبت شد',
+      message: `مصوبه "${newRes.title}" با کد ${newRes.code} ثبت گردید.`,
+      type: 'system'
+    });
+    return newRes;
+  };
+
+  const updateResolution = (resId: string, updates: Partial<SecretariatResolution>) => {
+    setSecretariatResolutions(prev => prev.map(r => r.id === resId ? { ...r, ...updates } : r));
+  };
+
+  const deleteResolution = (resId: string) => {
+    setSecretariatResolutions(prev => prev.filter(r => r.id !== resId));
+    if (selectedResolutionId === resId) setSelectedResolutionId(null);
+  };
+
+  const convertResolutionToTask = (resolutionId: string, projectId: string): Task => {
+    const res = secretariatResolutions.find(r => r.id === resolutionId);
+    if (!res) throw new Error('Resolution not found');
+    const newTask = addTask({
+      title: `اجرای مصوبه ${res.code}: ${res.title}`,
+      description: `متن مصوبه سازمانی:\n${res.content}\n\nمهلت اجرا: ${res.deadline}`,
+      projectId,
+      assigneeId: res.responsibleUserId,
+      deadline: res.deadline,
+      priority: 'high',
+      status: 'todo',
+      tags: ['مصوبه هیئت مدیره', res.code]
+    });
+    setSecretariatResolutions(prev => prev.map(r => {
+      if (r.id !== resolutionId) return r;
+      return {
+        ...r,
+        status: 'in_progress',
+        taskIds: [...(r.taskIds || []), newTask.id]
+      };
+    }));
+    sendNotification({
+      userId: res.responsibleUserId,
+      title: '📋 تسک اجرایی مصوبه ایجاد شد',
+      message: `تسک پیگیری مصوبه "${res.title}" به مسئول مربوطه واگذار شد.`,
+      type: 'assignment',
+      linkTaskId: newTask.id
+    });
+    return newTask;
+  };
+
+  const addArchiveDossier = (dossierData: Partial<ArchiveDossier> & { title: string; category: ArchiveCategory; location: string }): ArchiveDossier => {
+    const count = archiveDossiers.length + 1;
+    const newDossier: ArchiveDossier = {
+      id: `dos-${Date.now()}`,
+      code: `DOS-${dossierData.category.toUpperCase().slice(0, 3)}-1405-${count.toString().padStart(2, '0')}`,
+      title: dossierData.title,
+      category: dossierData.category,
+      location: dossierData.location,
+      confidentiality: dossierData.confidentiality || 'normal',
+      letterIds: dossierData.letterIds || [],
+      resolutionIds: dossierData.resolutionIds || [],
+      assetIds: dossierData.assetIds || [],
+      description: dossierData.description,
+      retentionYears: dossierData.retentionYears || 5,
+      createdAt: new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date()),
+      updatedAt: new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date())
+    };
+    setArchiveDossiers(prev => [newDossier, ...prev]);
+    return newDossier;
+  };
+
+  const updateArchiveDossier = (dossierId: string, updates: Partial<ArchiveDossier>) => {
+    setArchiveDossiers(prev => prev.map(d => d.id === dossierId ? { ...d, ...updates, updatedAt: new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date()) } : d));
+  };
+
+  const deleteArchiveDossier = (dossierId: string) => {
+    setArchiveDossiers(prev => prev.filter(d => d.id !== dossierId));
+  };
+
+
   return (
     <AppContext.Provider
       value={{
@@ -1891,6 +3135,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         openEditFolder,
         uploadAsset,
         uploadNewVersion,
+        deleteAssetVersion,
+        revertToAssetVersion,
         updateAsset,
         deleteAsset,
         restoreAsset,
@@ -1906,6 +3152,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateFolder,
         deleteFolder,
         toggleFolderFavorite,
+        conversations,
+        messages,
+        activeConversationId,
+        setActiveConversationId,
+        chatFilter,
+        setChatFilter,
+        chatSearchQuery,
+        setChatSearchQuery,
+        sendMessage,
+        editMessage,
+        deleteMessage,
+        togglePinMessage,
+        toggleStarMessage,
+        toggleMessageReaction,
+        createConversation,
+        updateConversation,
+        addConversationMembers,
+        removeConversationMember,
+        updateMemberRole,
+        toggleMuteConversation,
+        startDirectChatWithUser,
+        openProjectChannel,
+        // Think Tank (اتاق فکر)
+        ideas,
+        thinkTankMeetings,
+        selectedIdeaId,
+        setSelectedIdeaId,
+        selectedMeetingId,
+        setSelectedMeetingId,
+        addIdea,
+        updateIdea,
+        deleteIdea,
+        voteIdea,
+        votePollOption,
+        addIdeaComment,
+        toggleIdeaCommentReaction,
+        createIdeaPoll,
+        convertIdeaToProject,
+        convertIdeaToTask,
+        addThinkTankMeeting,
+        updateThinkTankMeeting,
+        deleteThinkTankMeeting,
+        addMeetingMinutes,
+        convertActionItemToTask,
+        // Secretariat (دبیرخانه)
+        secretariatLetters,
+        secretariatResolutions,
+        archiveDossiers,
+        selectedLetterId,
+        setSelectedLetterId,
+        selectedResolutionId,
+        setSelectedResolutionId,
+        addLetter,
+        updateLetter,
+        deleteLetter,
+        referLetter,
+        updateReferralStatus,
+        convertReferralToTask,
+        addLetterWorkflowStep,
+        replyLetter,
+        archiveLetter,
+        addResolution,
+        updateResolution,
+        deleteResolution,
+        convertResolutionToTask,
+        addArchiveDossier,
+        updateArchiveDossier,
+        deleteArchiveDossier,
         activeView,
         setActiveView,
         selectedProjectId,

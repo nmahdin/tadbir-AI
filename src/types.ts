@@ -37,7 +37,7 @@ export interface PermissionItem {
   id: string;
   label: string;
   description: string;
-  category: 'users' | 'projects' | 'teams' | 'tasks' | 'reports' | 'settings';
+  category: 'users' | 'projects' | 'teams' | 'tasks' | 'reports' | 'settings' | 'dam' | 'messaging' | 'thinktank' | 'secretariat';
 }
 
 export interface SystemRole {
@@ -230,6 +230,8 @@ export type ActiveView =
   | 'my-tasks'
   | 'projects'
   | 'project-detail'
+  | 'think-tank'
+  | 'secretariat'
   | 'assets'
   | 'templates'
   | 'teams'
@@ -238,6 +240,7 @@ export type ActiveView =
   | 'reports'
   | 'analytics'
   | 'notifications'
+  | 'messages'
   | 'user-management'
   | 'roles-management'
   | 'user-profile'
@@ -348,4 +351,361 @@ export interface DigitalAsset {
   downloadCount: number;
   description?: string;
 }
+
+// ==========================================
+// Internal Messaging & Chat Types
+// ==========================================
+
+export type ChatType = 'direct' | 'group' | 'channel';
+
+export type MessageDeliveryStatus = 'sending' | 'sent' | 'delivered' | 'read';
+
+export interface ChatReaction {
+  emoji: string; // e.g. 👍, ❤️, 😂, 🎉, ✅, ❓
+  count: number;
+  userIds: string[];
+}
+
+export interface ChatAttachment {
+  id: string;
+  name: string;
+  size: number;
+  sizeFormatted: string;
+  type: 'image' | 'video' | 'audio' | 'document' | 'voice' | 'archive';
+  url: string;
+  thumbnailUrl?: string;
+  duration?: string;
+}
+
+export interface TaskReference {
+  taskId: string;
+  title: string;
+  status: TaskStatus;
+  priority: Priority;
+  projectName?: string;
+  assigneeName?: string;
+}
+
+export interface ProjectReference {
+  projectId: string;
+  name: string;
+  key: string;
+  color: string;
+  status: ProjectStatus;
+  progress: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  text: string;
+  timestamp: string;
+  createdAt: string;
+  deliveryStatus: MessageDeliveryStatus;
+  isEdited?: boolean;
+  editedAt?: string;
+  isPinned?: boolean;
+  isStarred?: boolean;
+  replyToMessageId?: string;
+  replyToMessage?: {
+    id: string;
+    senderName: string;
+    text: string;
+  };
+  attachments?: ChatAttachment[];
+  taskRef?: TaskReference;
+  projectRef?: ProjectReference;
+  reactions?: ChatReaction[];
+  mentions?: string[];
+}
+
+export type ConversationRole = 'owner' | 'admin' | 'member';
+
+export interface ConversationMember {
+  userId: string;
+  role: ConversationRole;
+  joinedAt: string;
+  muted?: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  type: ChatType; // 'direct' | 'group' | 'channel'
+  name: string;
+  avatar?: string;
+  color?: string;
+  description?: string;
+  projectId?: string;
+  teamId?: string;
+  members: ConversationMember[];
+  memberIds: string[];
+  unreadCount?: number;
+  lastMessage?: {
+    text: string;
+    timestamp: string;
+    senderId: string;
+    senderName: string;
+  };
+  pinnedMessageIds?: string[];
+  isArchived?: boolean;
+  isMuted?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ChatFilterCategory = 'all' | 'direct' | 'group' | 'channel' | 'starred';
+
+// ==========================================
+// اتاق فکر (Think Tank / Idea Management) Types
+// ==========================================
+
+export type IdeaStatus = 
+  | 'draft'               // پیش‌نویس
+  | 'submitted'           // ثبت‌شده / در انتظار بررسی
+  | 'under_review'        // در حال ارزیابی تخصصی
+  | 'needs_info'          // نیازمند اطلاعات تکمیلی
+  | 'approved'            // تصویب‌شده
+  | 'rejected'            // ردشده
+  | 'in_progress'         // در حال اجرا
+  | 'implemented'        // پیاده‌سازی‌شده
+  | 'completed';          // تکمیل‌شده
+
+export type IdeaVoteOption = 'agree' | 'disagree' | 'needs_investigation';
+
+export interface IdeaVote {
+  id: string;
+  userId: string;
+  option: IdeaVoteOption;
+  timestamp: string;
+  comment?: string;
+}
+
+export interface IdeaCommentReaction {
+  emoji: string;
+  userIds: string[];
+  count: number;
+}
+
+export interface IdeaComment {
+  id: string;
+  userId: string;
+  text: string;
+  timestamp: string;
+  replyToId?: string;
+  replyToText?: string;
+  replyToAuthor?: string;
+  reactions?: IdeaCommentReaction[];
+  mentions?: string[];
+  assetIds?: string[];
+}
+
+export interface IdeaActivity {
+  id: string;
+  userId: string;
+  action: string;
+  timestamp: string;
+  details?: string;
+  type?: 'status_change' | 'comment' | 'vote' | 'conversion' | 'meeting' | 'edit';
+}
+
+export interface Idea {
+  id: string;
+  code: string; // e.g. "IDEA-101"
+  title: string;
+  description: string;
+  problemSolved: string;
+  proposedSolution: string;
+  creatorId: string;
+  teamId?: string;
+  projectId?: string;
+  convertedProjectId?: string;
+  convertedTaskId?: string;
+  priority: Priority;
+  status: IdeaStatus;
+  tags: string[];
+  assetIds: string[]; // DAM attachment ids
+  comments: IdeaComment[];
+  activities: IdeaActivity[];
+  votes: IdeaVote[];
+  hasPoll: boolean;
+  pollQuestion?: string;
+  pollOptions?: { id: string; text: string; votes: string[] }[];
+  targetDepartment?: string;
+  estimatedBudget?: string;
+  estimatedEffort?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ThinkTankMeetingAgendaItem {
+  id: string;
+  title: string;
+  durationMinutes?: number;
+  presenterId?: string;
+  completed: boolean;
+  notes?: string;
+  relatedIdeaId?: string;
+}
+
+export interface MeetingActionItem {
+  id: string;
+  title: string;
+  assigneeId: string;
+  deadline: string;
+  convertedTaskId?: string;
+  status: 'pending' | 'converted' | 'completed';
+}
+
+export interface ThinkTankMeeting {
+  id: string;
+  title: string;
+  description?: string;
+  date: string; // e.g. "۱۴۰۵/۰۶/۱۵"
+  time: string; // e.g. "۱۰:۳۰"
+  duration: string; // e.g. "۹۰ دقیقه"
+  organizerId: string;
+  attendeeIds: string[];
+  agenda: ThinkTankMeetingAgendaItem[];
+  relatedIdeaIds?: string[];
+  assetIds?: string[];
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  locationType: 'in_person' | 'online' | 'hybrid';
+  locationDetails?: string;
+  minutesSummary?: string;
+  decisions?: string[];
+  actionItems?: MeetingActionItem[];
+  createdAt: string;
+}
+
+// ==========================================
+// دبیرخانه (Secretariat / Correspondence) Types
+// ==========================================
+
+export type LetterType = 'incoming' | 'outgoing' | 'internal';
+
+export type LetterClassification = 
+  | 'normal'              // عادی
+  | 'confidential'        // محرمانه
+  | 'highly_confidential' // خیلی محرمانه
+  | 'secret'              // سری
+  | 'top_secret';         // به کلی سری
+
+export type LetterUrgency = 
+  | 'normal'              // عادی
+  | 'urgent'              // فوری
+  | 'immediate';          // آنی
+
+export type LetterStatus = 
+  | 'registered'          // ثبت‌شده
+  | 'referred'            // ارجاع داده‌شده
+  | 'in_progress'         // در حال اقدام
+  | 'answered'            // پاسخ داده‌شده
+  | 'draft'               // پیش‌نویس (صادره)
+  | 'under_review'        // در حال بررسی (صادره)
+  | 'approved'            // تأییدشده (صادره)
+  | 'sent'                // ارسال‌شده (صادره)
+  | 'archived';           // بایگانی‌شده
+
+export type ReferralActionType = 
+  | 'review'              // جهت بررسی و اظهار نظر
+  | 'action'              // جهت اقدام لازم
+  | 'response'            // جهت تهیه پاسخ
+  | 'info'                // صرفاً جهت استحضار و اطلاع
+  | 'followup';           // جهت پیگیری مستمر
+
+export interface LetterReferral {
+  id: string;
+  letterId: string;
+  fromUserId: string;
+  toUserId?: string;
+  toTeamId?: string;
+  department?: string;
+  actionType: ReferralActionType;
+  instructions: string;
+  deadline: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+  responseNotes?: string;
+  completedAt?: string;
+  timestamp: string;
+  convertedTaskId?: string;
+}
+
+export interface LetterWorkflowStep {
+  id: string;
+  userId: string;
+  stageName: string;
+  action: string;
+  timestamp: string;
+  notes?: string;
+  status: 'completed' | 'current' | 'pending';
+}
+
+export interface SecretariatLetter {
+  id: string;
+  letterNumber: string; // e.g. "وارده: دب-۱۴۰۵/۳۲۰" or "صادره: صاد-۱۴۰۵/۰۸۲"
+  indicatNumber?: string; // شماره اندیکاتور
+  type: LetterType;
+  subject: string;
+  content: string;
+  sender: string; // سازمان یا شخص فرستنده
+  senderUserId?: string;
+  recipient: string; // گیرنده اصلی
+  recipientUserId?: string;
+  ccList?: string[]; // رونوشت به
+  date: string;
+  registeredAt: string;
+  classification: LetterClassification;
+  urgency: LetterUrgency;
+  status: LetterStatus;
+  responseDeadline?: string;
+  relatedLetterId?: string; // عطف به یا پیرو نامه دیگر
+  assetIds: string[]; // پیوست‌ها متصل به DAM
+  referrals: LetterReferral[];
+  workflow: LetterWorkflowStep[];
+  archiveDossierId?: string;
+  archiveBox?: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ResolutionStatus = 'approved' | 'in_progress' | 'implemented' | 'overdue' | 'cancelled';
+
+export interface SecretariatResolution {
+  id: string;
+  code: string; // e.g. "مصوبه شماره ۱۴۰۵/۲۲"
+  title: string;
+  meetingId?: string;
+  meetingTitle?: string;
+  date: string;
+  content: string;
+  responsibleUserId: string;
+  department?: string;
+  deadline: string;
+  status: ResolutionStatus;
+  taskIds?: string[];
+  assetIds?: string[];
+  notes?: string;
+  createdAt: string;
+}
+
+export type ArchiveCategory = 'contracts' | 'financial' | 'administrative' | 'projects' | 'legal' | 'general';
+
+export interface ArchiveDossier {
+  id: string;
+  code: string; // e.g. "DOS-2026-ADM"
+  title: string;
+  category: ArchiveCategory;
+  location: string; // زونکن / سرور دیجیتال
+  confidentiality: LetterClassification;
+  letterIds: string[];
+  resolutionIds: string[];
+  assetIds: string[];
+  description?: string;
+  retentionYears?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 

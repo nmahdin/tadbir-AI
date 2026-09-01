@@ -24,7 +24,10 @@ import {
   Shield,
   Building2,
   FolderOpen,
-  User as UserIcon
+  MessageSquare,
+  User as UserIcon,
+  Lightbulb,
+  FileText
 } from 'lucide-react';
 
 export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({
@@ -40,6 +43,9 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({
     notifications,
     templates,
     assets,
+    conversations,
+    ideas,
+    secretariatLetters,
     setSelectedProjectId,
     setIsCreateTaskOpen,
     setIsCreateProjectOpen,
@@ -57,6 +63,9 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({
   ).length;
 
   const activeAssetsCount = assets ? assets.filter(a => !a.isTrash).length : 0;
+  const unreadMessagesCount = (conversations || []).reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  const activeIdeasCount = (ideas || []).length;
+  const activeLettersCount = (secretariatLetters || []).length;
 
   const canManageUsers = hasPermission('users.view') || currentUser.role === 'admin';
   const canManageRoles = hasPermission('users.roles') || currentUser.role === 'admin';
@@ -68,11 +77,32 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({
       icon: <LayoutDashboard className="w-4 h-4" />
     },
     {
+      id: 'thought-room' as ActiveView,
+      label: 'اتاق فکر و ایده‌ها',
+      icon: <Lightbulb className="w-4 h-4" />,
+      badge: activeIdeasCount > 0 ? activeIdeasCount : null,
+      badgeColor: 'bg-amber-100 text-amber-800'
+    },
+    {
+      id: 'secretariat' as ActiveView,
+      label: 'دبیرخانه و مکاتبات',
+      icon: <FileText className="w-4 h-4" />,
+      badge: activeLettersCount > 0 ? activeLettersCount : null,
+      badgeColor: 'bg-blue-100 text-blue-800'
+    },
+    {
       id: 'my-tasks' as ActiveView,
       label: 'وظایف من',
       icon: <CheckSquare className="w-4 h-4" />,
       badge: myTasksCount > 0 ? myTasksCount : null,
       badgeColor: 'bg-indigo-100 text-indigo-700'
+    },
+    {
+      id: 'messages' as ActiveView,
+      label: 'پیام‌ها و گفتگوها',
+      icon: <MessageSquare className="w-4 h-4" />,
+      badge: unreadMessagesCount > 0 ? unreadMessagesCount : null,
+      badgeColor: 'bg-emerald-100 text-emerald-800'
     },
     {
       id: 'projects' as ActiveView,

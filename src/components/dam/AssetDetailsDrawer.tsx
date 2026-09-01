@@ -46,6 +46,8 @@ export const AssetDetailsDrawer: React.FC = () => {
     setVersionModalAssetId,
     setShareTargetAssetId,
     addAssetComment,
+    deleteAssetVersion,
+    revertToAssetVersion,
     folders,
     projects,
     tasks,
@@ -447,19 +449,47 @@ export const AssetDetailsDrawer: React.FC = () => {
                         {ver.changelog}
                       </p>
 
-                      <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1">
+                      <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1 flex-wrap gap-2">
                         <div className="flex items-center gap-1.5">
                           <Avatar user={verUploader} size="xs" />
-                          <span>{verUploader?.name || 'سارا چنگیزی'} • {ver.uploadedAt}</span>
+                          <span>{verUploader?.name || 'کاربر'} • {ver.uploadedAt}</span>
                         </div>
 
-                        <button
-                          onClick={() => downloadAsset(asset)}
-                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>دانلود این نسخه</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => downloadAsset({ ...asset, fileName: ver.fileName, size: ver.size, sizeFormatted: ver.sizeFormatted })}
+                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                            title="دانلود این نسخه"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>دانلود</span>
+                          </button>
+
+                          {!isCurrent && (
+                            <button
+                              onClick={() => revertToAssetVersion(asset.id, ver.id)}
+                              className="text-xs font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1 cursor-pointer bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200"
+                              title="فعال‌سازی این نسخه"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span>فعال‌سازی</span>
+                            </button>
+                          )}
+
+                          {asset.versions.length > 1 && (
+                            <button
+                              onClick={() => {
+                                if (confirm(`آیا از حذف نسخه v${ver.versionNumber} (${ver.fileName}) از سیستم اطمینان دارید؟`)) {
+                                  deleteAssetVersion(asset.id, ver.id);
+                                }
+                              }}
+                              className="text-xs font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1 cursor-pointer p-1 rounded-lg hover:bg-rose-50"
+                              title="حذف این نسخه"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );

@@ -16,7 +16,10 @@ import {
   Edit,
   Trash2,
   MoreVertical,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle,
+  MessageSquare,
+  X
 } from 'lucide-react';
 
 export const ProjectsView: React.FC = () => {
@@ -31,13 +34,15 @@ export const ProjectsView: React.FC = () => {
     openEditProject,
     updateProject,
     deleteProject,
-    setIsTemplatesModalOpen
+    setIsTemplatesModalOpen,
+    openProjectChannel
   } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   const canCreateProject = currentUser.role === 'admin' || currentUser.role === 'project_manager' || currentUser.role === 'team_lead';
 
@@ -59,6 +64,12 @@ export const ProjectsView: React.FC = () => {
     setActiveView('project-detail');
   };
 
+  const handleConfirmDelete = () => {
+    if (!projectToDelete) return;
+    deleteProject(projectToDelete.id);
+    setProjectToDelete(null);
+  };
+
   const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
       case 'planning':
@@ -77,7 +88,7 @@ export const ProjectsView: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 text-right">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 text-right" dir="rtl">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -122,7 +133,7 @@ export const ProjectsView: React.FC = () => {
       <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-600 absolute right-3 top-3" />
+          <Search className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
           <input
             type="text"
             value={searchTerm}
@@ -215,7 +226,7 @@ export const ProjectsView: React.FC = () => {
                 />
 
                 <div>
-                  {/* Top line with Key, badges and edit button */}
+                  {/* Top line with Key, badges and edit/delete buttons */}
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-2">
                       <span 
@@ -227,14 +238,21 @@ export const ProjectsView: React.FC = () => {
                       <PriorityPill priority={proj.priority} size="sm" />
                     </div>
                     
-                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                       <ProjectStatusBadge status={proj.status} size="sm" />
                       <button
                         onClick={() => openEditProject(proj)}
-                        title="ویرایش و پیکربندی پروژه"
-                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                        title="ویرایش پروژه"
+                        className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
                       >
                         <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setProjectToDelete(proj)}
+                        title="حذف پروژه"
+                        className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -263,7 +281,7 @@ export const ProjectsView: React.FC = () => {
 
                   <div className="flex items-center justify-between text-xs text-slate-600">
                     <div className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-slate-600" />
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
                       <span>سررسید: {proj.deadline}</span>
                     </div>
                     <span className="font-bold text-slate-700">
@@ -273,24 +291,37 @@ export const ProjectsView: React.FC = () => {
 
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-600 font-medium">تیم:</span>
+                      <span className="text-[11px] text-slate-500 font-medium">تیم:</span>
                       <AvatarGroup users={members} max={3} size="xs" />
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditProject(proj);
-                        }}
+                        onClick={() => openProjectChannel(proj.id)}
+                        title="ورود به کانال چت پروژه"
+                        className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => openEditProject(proj)}
                         className="px-2.5 py-1 text-xs font-bold text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                       >
                         ویرایش
                       </button>
-                      <span className="text-xs font-bold text-indigo-600 group-hover:-translate-x-1 transition-transform flex items-center gap-1">
+                      <button
+                        onClick={() => setProjectToDelete(proj)}
+                        className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                      >
+                        حذف
+                      </button>
+                      <button
+                        onClick={() => handleOpenProject(proj.id)}
+                        className="text-xs font-bold text-indigo-600 group-hover:-translate-x-1 transition-transform flex items-center gap-1 pr-1 cursor-pointer"
+                      >
                         <span>ورود</span>
                         <ArrowUpRight className="w-3.5 h-3.5 rotate-180" />
-                      </span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -333,12 +364,12 @@ export const ProjectsView: React.FC = () => {
                           />
                           <div>
                             <div className="font-bold text-slate-900">{proj.name}</div>
-                            <span className="text-[10px] font-mono text-slate-600">[{proj.key}]</span>
+                            <span className="text-[10px] font-mono text-slate-500">[{proj.key}]</span>
                           </div>
                         </div>
                       </td>
 
-                      {/* Direct Status Change in Project Table! */}
+                      {/* Direct Status Change in Project Table */}
                       <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="relative inline-block">
                           <select
@@ -379,16 +410,39 @@ export const ProjectsView: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-left" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Chat Channel */}
+                          <button
+                            onClick={() => openProjectChannel(proj.id)}
+                            title="ورود به کانال چت پروژه"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+
+                          {/* Edit Project Button */}
                           <button
                             onClick={() => openEditProject(proj)}
-                            title="ویرایش پروژه"
-                            className="p-1.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                            title="ویرایش مشخصات پروژه"
+                            className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>ویرایش</span>
                           </button>
+
+                          {/* Delete Project Button with Confirmation Modal */}
+                          <button
+                            onClick={() => setProjectToDelete(proj)}
+                            title="حذف پروژه"
+                            className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-200 text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>حذف</span>
+                          </button>
+
+                          {/* Open Project */}
                           <button
                             onClick={() => handleOpenProject(proj.id)}
-                            className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-colors cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors cursor-pointer shadow-2xs"
                           >
                             ورود
                           </button>
@@ -399,6 +453,47 @@ export const ProjectsView: React.FC = () => {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Project Confirmation Dialog */}
+      {projectToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95 duration-200 text-right">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-extrabold text-slate-900 text-base">
+                حذف پروژه از سامانه تدبیر
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                آیا از حذف قطعی پروژه <span className="font-bold text-slate-900">«{projectToDelete.name}» [{projectToDelete.key}]</span> اطمینان دارید؟
+              </p>
+              <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-[11px] text-rose-700 leading-relaxed">
+                هشدار: با حذف این پروژه، تمام تسک‌ها، پیوست‌ها و تنظیمات مرتبط با آن حذف خواهند شد. این عمل قابل بازگشت نیست.
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setProjectToDelete(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors cursor-pointer"
+              >
+                انصراف
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>بله، حذف قطعی پروژه</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

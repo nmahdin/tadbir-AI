@@ -30,6 +30,20 @@ export const SYSTEM_PERMISSIONS: PermissionItem[] = [
   { id: 'reports.view', label: 'مشاهده گزارش‌های مدیریتی', description: 'دسترسی به نمودارهای بازدهی، سرعت اسپرینت و توزیع بار کاری', category: 'reports' },
   { id: 'reports.export', label: 'خروجی اکسل و PDF', description: 'استخراج داده‌های آماری و فعالیت‌ها با فرمت‌های مختلف', category: 'reports' },
 
+  // اتاق فکر و نوآوری
+  { id: 'thinktank.view', label: 'مشاهده اتاق فکر و ایده‌ها', description: 'دسترسی به فهرست ایده‌ها، جلسات و مصوبات اتاق فکر', category: 'thinktank' },
+  { id: 'thinktank.create_idea', label: 'ثبت و پیشنهاد ایده جدید', description: 'امکان ثبت ایده، چالش‌ها و پیوست مستندات به اتاق فکر', category: 'thinktank' },
+  { id: 'thinktank.vote_comment', label: 'رأی‌دهی و ثبت دیدگاه', description: 'امکان شرکت در نظرسنجی‌ها، ارزیابی و مباحثات تخصصی', category: 'thinktank' },
+  { id: 'thinktank.manage_meetings', label: 'مدیریت جلسات و صورتجلسات', description: 'برگزاری رویدادهای بارش فکری و ثبت تصمیمات', category: 'thinktank' },
+  { id: 'thinktank.convert', label: 'تبدیل ایده به پروژه و وظیفه', description: 'ارتقای ایده‌های مصوب به تسک یا پروژه اجرایی در سامانه', category: 'thinktank' },
+
+  // دبیرخانه و اتوماسیون اداری
+  { id: 'secretariat.view', label: 'مشاهده نامه‌ها و مکاتبات', description: 'دسترسی به کارتابل اداری، نامه‌های وارده، صادره و سوابق', category: 'secretariat' },
+  { id: 'secretariat.create_letter', label: 'ثبت نامه وارده و صدور نامه', description: 'ایجاد پیش‌نویس مکاتبه، صدور شماره اندیکاتور و بارگذاری اسناد', category: 'secretariat' },
+  { id: 'secretariat.refer_letter', label: 'ارجاع و هامش‌نویسی', description: 'ارجاع سازمانی نامه به اشخاص، تیم‌ها و تعیین مهلت اقدام', category: 'secretariat' },
+  { id: 'secretariat.manage_archive', label: 'مدیریت زونکن و بایگانی', description: 'طبقه‌بندی، امحا، دسته‌بندی محرمانه و کدگذاری اسناد', category: 'secretariat' },
+  { id: 'secretariat.manage_resolutions', label: 'مدیریت و پایش مصوبات سازمانی', description: 'ثبت مصوبات هیئت مدیره و تطبیق با تسک‌های اجرایی', category: 'secretariat' },
+
   // تنظیمات سامانه
   { id: 'settings.manage', label: 'مدیریت تنظیمات سامانه تدبیر', description: 'پیکربندی هویت سازمان، تنظیمات امنیتی و چرخه اسپرینت‌ها', category: 'settings' }
 ];
@@ -59,7 +73,9 @@ export const INITIAL_ROLES: SystemRole[] = [
       'projects.view', 'projects.create', 'projects.edit',
       'teams.view', 'teams.edit',
       'tasks.view', 'tasks.create', 'tasks.edit', 'tasks.delete',
-      'reports.view', 'reports.export'
+      'reports.view', 'reports.export',
+      'thinktank.view', 'thinktank.create_idea', 'thinktank.vote_comment', 'thinktank.manage_meetings', 'thinktank.convert',
+      'secretariat.view', 'secretariat.create_letter', 'secretariat.refer_letter', 'secretariat.manage_resolutions'
     ],
     createdAt: '2026-01-01'
   },
@@ -76,7 +92,9 @@ export const INITIAL_ROLES: SystemRole[] = [
       'projects.view',
       'teams.view',
       'tasks.view', 'tasks.edit',
-      'reports.view'
+      'reports.view',
+      'thinktank.view', 'thinktank.create_idea', 'thinktank.vote_comment',
+      'secretariat.view', 'secretariat.create_letter', 'secretariat.refer_letter'
     ],
     createdAt: '2026-01-01'
   },
@@ -92,7 +110,9 @@ export const INITIAL_ROLES: SystemRole[] = [
       'users.view',
       'projects.view',
       'tasks.view', 'tasks.edit', 'tasks.create',
-      'reports.view'
+      'reports.view',
+      'thinktank.view', 'thinktank.create_idea', 'thinktank.vote_comment',
+      'secretariat.view'
     ],
     createdAt: '2026-03-15'
   }
@@ -274,6 +294,94 @@ export const INITIAL_USERS: User[] = [
     createdAt: '۱۴۰۴/۰۹/۰۱',
     twoFactorEnabled: false,
     bio: 'حساب کاربری موقتاً به دلیل اتمام قرارداد برون‌سپاری مسدود شده است.'
+  },
+  {
+    id: 'usr-10',
+    name: 'مهدی رضایی',
+    username: 'mehdi.rezaei',
+    email: 'mehdi.rezaei@tadbir.ir',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    role: 'team_member',
+    roleId: 'role-member',
+    status: 'active',
+    title: 'طراح ارشد رابط کاربری و دیزاین سیستم',
+    department: 'تیم طراحی محصول',
+    activeProjectsCount: 3,
+    completedTasksCount: 45,
+    workloadPercentage: 65,
+    skills: ['Figma', 'Design System', 'Micro-interactions', 'Prototyping'],
+    phone: '۰۹۱۲۱۱۱۴۴۵۵',
+    location: 'تهران، نیاوران',
+    lastLogin: 'امروز - ساعت ۱۶:۱۰',
+    createdAt: '۱۴۰۴/۰۳/۱۰',
+    twoFactorEnabled: true,
+    bio: 'طراح رابط کاربری و شیفته تعاملات ظریف و سیستم‌های دیزاین مقیاس‌پذیر.'
+  },
+  {
+    id: 'usr-11',
+    name: 'علی احمدی',
+    username: 'ali.ahmadi',
+    email: 'ali.ahmadi@tadbir.ir',
+    avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
+    role: 'team_member',
+    roleId: 'role-member',
+    status: 'active',
+    title: 'توسعه‌دهنده ارشد بک‌اند و API',
+    department: 'تیم مهندسی نرم‌افزار',
+    activeProjectsCount: 2,
+    completedTasksCount: 58,
+    workloadPercentage: 80,
+    skills: ['Node.js', 'NestJS', 'PostgreSQL', 'Docker', 'Redis'],
+    phone: '۰۹۱۹۵۵۵۶۶۷۷',
+    location: 'تهران، میرداماد',
+    lastLogin: 'امروز - ساعت ۱۵:۴۵',
+    createdAt: '۱۴۰۴/۰۱/۲۰',
+    twoFactorEnabled: true,
+    bio: 'مهندس بک‌اند با تخصص در طراحی وب‌سرویس‌های امن و معماری میکروسرویس.'
+  },
+  {
+    id: 'usr-12',
+    name: 'سارا محمدی',
+    username: 'sara.mohammadi',
+    email: 'sara.mohammadi@tadbir.ir',
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+    role: 'team_member',
+    roleId: 'role-member',
+    status: 'active',
+    title: 'مدیر بازاریابی دیجیتال و رشد',
+    department: 'تیم رشد و مارکتینگ',
+    activeProjectsCount: 2,
+    completedTasksCount: 33,
+    workloadPercentage: 70,
+    skills: ['Digital Marketing', 'Growth Hacking', 'SEO', 'Data Analytics'],
+    phone: '۰۹۳۷۸۸۸۹۹۰۰',
+    location: 'تهران، پاسداران',
+    lastLogin: 'امروز - ساعت ۱۲:۳۰',
+    createdAt: '۱۴۰۴/۰۴/۰۵',
+    twoFactorEnabled: false,
+    bio: 'راهبر کمپین‌های تبلیغاتی و افزایش شاخص‌های تبدیل و جذب کاربر فعال.'
+  },
+  {
+    id: 'usr-13',
+    name: 'محمد کریمی',
+    username: 'mohammad.karimi',
+    email: 'mohammad.karimi@tadbir.ir',
+    avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=80',
+    role: 'team_member',
+    roleId: 'role-qa',
+    status: 'active',
+    title: 'سرپرست آزمون نرم‌افزار و DevOps',
+    department: 'تضمین کیفیت و تست',
+    activeProjectsCount: 3,
+    completedTasksCount: 51,
+    workloadPercentage: 60,
+    skills: ['DevOps', 'CI/CD', 'Automated Testing', 'Security Audit'],
+    phone: '۰۹۱۲۷۷۷۸۸۹۹',
+    location: 'کرج، عظیمیه',
+    lastLogin: 'امروز - ساعت ۱۴:۲۰',
+    createdAt: '۱۴۰۴/۰۲/۱۵',
+    twoFactorEnabled: true,
+    bio: 'مهندس DevOps و آزمون نرم‌افزار با تمرکز بر پایپ‌لاین‌های استقرار پیوسته و امنیت داده.'
   }
 ];
 
