@@ -68,84 +68,102 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({
   const activeLettersCount = (secretariatLetters || []).length;
 
   const canManageUsers = hasPermission('users.view') || currentUser.role === 'admin';
-  const canManageRoles = hasPermission('users.roles') || currentUser.role === 'admin';
+  const canManageRoles = hasPermission('roles.view') || hasPermission('users.roles') || currentUser.role === 'admin';
+  const canViewSettings = hasPermission('settings.view') || currentUser.role === 'admin';
 
-  const mainNavItems = [
+  const rawNavItems = [
     {
       id: 'dashboard' as ActiveView,
       label: 'داشبورد',
-      icon: <LayoutDashboard className="w-4 h-4" />
+      icon: <LayoutDashboard className="w-4 h-4" />,
+      permission: 'projects.view'
     },
     {
       id: 'thought-room' as ActiveView,
       label: 'اتاق فکر و ایده‌ها',
       icon: <Lightbulb className="w-4 h-4" />,
       badge: activeIdeasCount > 0 ? activeIdeasCount : null,
-      badgeColor: 'bg-amber-100 text-amber-800'
+      badgeColor: 'bg-amber-100 text-amber-800',
+      permission: 'thinktank.view'
     },
     {
       id: 'secretariat' as ActiveView,
       label: 'دبیرخانه و مکاتبات',
       icon: <FileText className="w-4 h-4" />,
       badge: activeLettersCount > 0 ? activeLettersCount : null,
-      badgeColor: 'bg-blue-100 text-blue-800'
+      badgeColor: 'bg-blue-100 text-blue-800',
+      permission: 'secretariat.view'
     },
     {
       id: 'my-tasks' as ActiveView,
       label: 'وظایف من',
       icon: <CheckSquare className="w-4 h-4" />,
       badge: myTasksCount > 0 ? myTasksCount : null,
-      badgeColor: 'bg-indigo-100 text-indigo-700'
+      badgeColor: 'bg-indigo-100 text-indigo-700',
+      permission: 'tasks.view'
     },
     {
       id: 'messages' as ActiveView,
       label: 'پیام‌ها و گفتگوها',
       icon: <MessageSquare className="w-4 h-4" />,
       badge: unreadMessagesCount > 0 ? unreadMessagesCount : null,
-      badgeColor: 'bg-emerald-100 text-emerald-800'
+      badgeColor: 'bg-emerald-100 text-emerald-800',
+      permission: 'messaging.chat'
     },
     {
       id: 'projects' as ActiveView,
       label: 'پروژه‌ها',
       icon: <FolderKanban className="w-4 h-4" />,
       badge: projects.length,
-      badgeColor: 'bg-slate-100 text-slate-700'
+      badgeColor: 'bg-slate-100 text-slate-700',
+      permission: 'projects.view'
     },
     {
       id: 'assets' as ActiveView,
       label: 'دارایی‌های دیجیتال (DAM)',
       icon: <FolderOpen className="w-4 h-4" />,
       badge: activeAssetsCount > 0 ? activeAssetsCount : null,
-      badgeColor: 'bg-amber-100 text-amber-700'
+      badgeColor: 'bg-amber-100 text-amber-700',
+      permission: 'dam.view'
     },
     {
       id: 'templates' as ActiveView,
       label: 'الگوهای پروژه',
       icon: <Layers className="w-4 h-4" />,
       badge: templates.length,
-      badgeColor: 'bg-purple-100 text-purple-700'
+      badgeColor: 'bg-purple-100 text-purple-700',
+      permission: 'projects.templates'
     },
     {
       id: 'teams' as ActiveView,
-      label: 'تیم‌ها و بار کاری',
-      icon: <Users2 className="w-4 h-4" />
+      label: 'تیم‌ها و ساختار',
+      icon: <Users2 className="w-4 h-4" />,
+      permission: 'teams.view'
     },
     {
       id: 'calendar' as ActiveView,
       label: 'تقویم زمان‌بندی',
-      icon: <Calendar className="w-4 h-4" />
+      icon: <Calendar className="w-4 h-4" />,
+      permission: 'projects.view'
     },
     {
       id: 'activity' as ActiveView,
       label: 'فید زنده فعالیت‌ها',
-      icon: <Activity className="w-4 h-4" />
+      icon: <Activity className="w-4 h-4" />,
+      permission: 'projects.view'
     },
     {
       id: 'analytics' as ActiveView,
       label: 'گزارش و تحلیل‌ها',
-      icon: <BarChart3 className="w-4 h-4" />
+      icon: <BarChart3 className="w-4 h-4" />,
+      permission: 'reports.view'
     }
   ];
+
+  const mainNavItems = rawNavItems.filter(item => {
+    if (!item.permission) return true;
+    return hasPermission(item.permission as any) || currentUser.role === 'admin';
+  });
 
   const handleNavClick = (viewId: ActiveView) => {
     if (viewId === 'templates') {

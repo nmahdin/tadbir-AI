@@ -16,7 +16,12 @@ import {
   CheckSquare,
   ExternalLink,
   ChevronDown,
-  Download
+  Download,
+  Lock,
+  Edit3,
+  SlidersHorizontal,
+  ShieldCheck,
+  UserCheck
 } from 'lucide-react';
 
 interface ConversationInfoDrawerProps {
@@ -38,12 +43,13 @@ export const ConversationInfoDrawer: React.FC<ConversationInfoDrawerProps> = ({
     addConversationMembers,
     removeConversationMember,
     updateMemberRole,
+    updateConversationPermissions,
     toggleMuteConversation,
     setSelectedProjectId,
     setActiveView
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'members' | 'files' | 'pins'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'permissions' | 'files' | 'pins'>('members');
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [selectedUserIdsToAdd, setSelectedUserIdsToAdd] = useState<string[]>([]);
 
@@ -70,6 +76,9 @@ export const ConversationInfoDrawer: React.FC<ConversationInfoDrawerProps> = ({
     setSelectedUserIdsToAdd([]);
     setIsAddMemberOpen(false);
   };
+
+  const currentWritePerm = conversation.writePermission || 'all';
+  const currentDeletePerm = conversation.deletePermission || 'all';
 
   return (
     <div className="w-80 border-r border-slate-200 bg-white h-full flex flex-col text-right animate-in slide-in-from-left-5 duration-200" dir="rtl">
@@ -142,23 +151,36 @@ export const ConversationInfoDrawer: React.FC<ConversationInfoDrawerProps> = ({
       <div className="px-3 pt-3 flex gap-1 border-b border-slate-100 pb-2">
         <button
           onClick={() => setActiveTab('members')}
-          className={`flex-1 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer text-center ${
+          className={`flex-1 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center ${
             activeTab === 'members' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           اعضا ({convMembers.length})
         </button>
+
+        {conversation.type !== 'direct' && (
+          <button
+            onClick={() => setActiveTab('permissions')}
+            className={`flex-1 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center ${
+              activeTab === 'permissions' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            دسترسی‌ها
+          </button>
+        )}
+
         <button
           onClick={() => setActiveTab('files')}
-          className={`flex-1 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer text-center ${
+          className={`flex-1 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center ${
             activeTab === 'files' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           فایل‌ها ({sharedFiles.length})
         </button>
+
         <button
           onClick={() => setActiveTab('pins')}
-          className={`flex-1 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer text-center ${
+          className={`flex-1 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center ${
             activeTab === 'pins' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -253,18 +275,154 @@ export const ConversationInfoDrawer: React.FC<ConversationInfoDrawerProps> = ({
                     ) : null}
 
                     {canManageMembers && user.id !== currentUser.id && !isOwner && (
-                      <button
-                        onClick={() => removeConversationMember(conversation.id, user.id)}
-                        title="حذف از گروه"
-                        className="opacity-0 group-hover:opacity-100 p-1 text-rose-500 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+                        <button
+                          onClick={() => {
+                            const newRole: ConversationRole = isAdmin ? 'member' : 'admin';
+                            updateMemberRole(conversation.id, user.id, newRole);
+                          }}
+                          title={isAdmin ? 'تبدیل به عضو عادی' : 'ارتقا به مدیر گروه'}
+                          className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => removeConversationMember(conversation.id, user.id)}
+                          title="حذف از گروه"
+                          className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {activeTab === 'permissions' && conversation.type !== 'direct' && (
+          <div className="space-y-4 text-xs">
+            {!canManageMembers ? (
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <Lock className="w-3.5 h-3.5 text-amber-700" />
+                  <span>دسترسی‌های گروه</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  تنظیمات ارسال و حذف پیام‌ها توسط مالک و مدیران گروه کنترل می‌شود.
+                </p>
+                <div className="pt-2 text-[11px] space-y-1 text-slate-700">
+                  <div>• دسترسی نوشتن: <span className="font-bold">{currentWritePerm === 'admins_only' ? 'فقط مدیران (کانال)' : 'همه اعضا'}</span></div>
+                  <div>• دسترسی حذف: <span className="font-bold">{currentDeletePerm === 'admins_only' ? 'فقط مدیران' : currentDeletePerm === 'none' ? 'غیرفعال' : 'همه اعضا (پیام خود)'}</span></div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-indigo-950">
+                    <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
+                    <span>مدیریت دسترسی‌های گروه و کانال</span>
+                  </div>
+                  <p className="text-[11px] text-indigo-800">
+                    به عنوان مدیر گروه می‌توانید نحوه ارسال و حذف پیام‌ها را برای اعضا محدود کنید.
+                  </p>
+                </div>
+
+                {/* Write Permission */}
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <label className="font-bold text-slate-900 block text-xs">
+                    مجوز ارسال پیام (نوشتن)
+                  </label>
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white cursor-pointer">
+                      <input
+                        type="radio"
+                        name="writePerm"
+                        value="all"
+                        checked={currentWritePerm === 'all'}
+                        onChange={() => updateConversationPermissions(conversation.id, 'all', currentDeletePerm)}
+                        className="text-indigo-600"
+                      />
+                      <div>
+                        <span className="font-bold text-slate-800 block text-[11px]">همه اعضا</span>
+                        <span className="text-[10px] text-slate-500">تمامی اعضای گروه می‌توانند آزادانه پیام بفرستند.</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white cursor-pointer">
+                      <input
+                        type="radio"
+                        name="writePerm"
+                        value="admins_only"
+                        checked={currentWritePerm === 'admins_only'}
+                        onChange={() => updateConversationPermissions(conversation.id, 'admins_only', currentDeletePerm)}
+                        className="text-indigo-600"
+                      />
+                      <div>
+                        <span className="font-bold text-slate-800 block text-[11px]">فقط مدیران (حالت کانال خبری)</span>
+                        <span className="text-[10px] text-slate-500">اعضای عادی فقط خواننده بوده و امکان ارسال پیام ندارند.</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Delete Permission */}
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <label className="font-bold text-slate-900 block text-xs">
+                    مجوز حذف پیام‌ها
+                  </label>
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white cursor-pointer">
+                      <input
+                        type="radio"
+                        name="deletePerm"
+                        value="all"
+                        checked={currentDeletePerm === 'all'}
+                        onChange={() => updateConversationPermissions(conversation.id, currentWritePerm, 'all')}
+                        className="text-indigo-600"
+                      />
+                      <div>
+                        <span className="font-bold text-slate-800 block text-[11px]">همه اعضا</span>
+                        <span className="text-[10px] text-slate-500">اعضا می‌توانند پیام‌های ارسالی خودشان را حذف کنند.</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white cursor-pointer">
+                      <input
+                        type="radio"
+                        name="deletePerm"
+                        value="admins_only"
+                        checked={currentDeletePerm === 'admins_only'}
+                        onChange={() => updateConversationPermissions(conversation.id, currentWritePerm, 'admins_only')}
+                        className="text-indigo-600"
+                      />
+                      <div>
+                        <span className="font-bold text-slate-800 block text-[11px]">فقط مدیران و مالک</span>
+                        <span className="text-[10px] text-slate-500">تنها مدیران گروه اجازه پاک کردن پیام‌ها را دارند.</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white cursor-pointer">
+                      <input
+                        type="radio"
+                        name="deletePerm"
+                        value="none"
+                        checked={currentDeletePerm === 'none'}
+                        onChange={() => updateConversationPermissions(conversation.id, currentWritePerm, 'none')}
+                        className="text-indigo-600"
+                      />
+                      <div>
+                        <span className="font-bold text-slate-800 block text-[11px]">حذف پیام‌ها غیرفعال (آرشیو قطعی)</span>
+                        <span className="text-[10px] text-slate-500">هیچ پیامی در این گفتگو قابل حذف نخواهد بود.</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

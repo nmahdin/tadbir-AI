@@ -15,7 +15,8 @@ import {
   Image as ImageIcon,
   FileText,
   CornerDownRight,
-  Edit2
+  Edit2,
+  Lock
 } from 'lucide-react';
 
 interface MessageInputProps {
@@ -35,7 +36,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onCancelReply,
   onCancelEdit
 }) => {
-  const { sendMessage, editMessage } = useApp();
+  const { sendMessage, editMessage, conversations, currentUser } = useApp();
 
   const [text, setText] = useState(editingMessage?.text || '');
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -48,6 +49,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const recordingTimerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const currentConv = conversations.find(c => c.id === conversationId);
+  const memberInfo = currentConv?.members?.find(m => m.userId === currentUser.id);
+  const isConvAdmin = memberInfo?.role === 'owner' || memberInfo?.role === 'admin' || currentUser.role === 'admin';
+  const canWrite = !currentConv || currentConv.type === 'direct' || currentConv.writePermission !== 'admins_only' || isConvAdmin;
+
   // Sync edit mode text when editingMessage changes
   React.useEffect(() => {
     if (editingMessage) {
@@ -56,6 +62,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   }, [editingMessage]);
 
   const handleSend = () => {
+    if (!canWrite) return;
     if (!text.trim() && attachments.length === 0 && !selectedTask && !selectedProject) return;
 
     if (editingMessage) {
@@ -90,6 +97,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canWrite) return;
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -109,6 +117,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   const handleToggleRecord = () => {
+    if (!canWrite) return;
     if (!isRecording) {
       setIsRecording(true);
       setRecordingSeconds(0);
@@ -131,6 +140,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       setAttachments([...attachments, voiceAttachment]);
     }
   };
+
+  if (!canWrite) {
+    return (
+      <div className="bg-slate-50 border-t border-slate-200 p-4 text-center text-slate-500 text-xs font-semibold flex items-center justify-center gap-2" dir="rtl">
+        <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+        <span>ارسال پیام در این گروه یا کانال فقط برای مدیران مجاز است.</span>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border-t border-slate-200 p-3 sm:p-4 text-right" dir="rtl">

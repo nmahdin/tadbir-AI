@@ -3,12 +3,12 @@ import confetti from 'canvas-confetti';
 import { 
   User, Project, Task, Team, AppNotification, ActiveView, TaskStatus, Role, Priority, ProjectTemplate, ActivityLog, ActivityType, SystemRole, UserStatus,
   DigitalAsset, AssetFolder, DamSubView, AssetCategory, AssetPermissionLevel, AssetAccessRight, AssetVersion, AssetActivity, AssetComment,
-  Conversation, ChatMessage, ChatType, ChatFilterCategory, TaskReference, ProjectReference, ChatAttachment, ConversationRole, ConversationMember,
+  Conversation, ChatMessage, ChatType, ChatFilterCategory, TaskReference, ProjectReference, ChatAttachment, ConversationRole, ConversationMember, ChatWritePermission, ChatDeletePermission,
   Idea, IdeaVote, IdeaVoteOption, IdeaComment, IdeaActivity, ThinkTankMeeting, MeetingActionItem, ThinkTankMeetingAgendaItem,
   SecretariatLetter, LetterReferral, LetterWorkflowStep, LetterType, LetterClassification, LetterUrgency, LetterStatus, ReferralActionType, SecretariatResolution, ResolutionStatus, ArchiveDossier, ArchiveCategory
 } from '../types';
 import { 
-  INITIAL_USERS, INITIAL_PROJECTS, INITIAL_TASKS, INITIAL_TEAMS, INITIAL_NOTIFICATIONS, INITIAL_TEMPLATES, INITIAL_ACTIVITIES, INITIAL_ROLES, SYSTEM_PERMISSIONS 
+  INITIAL_USERS, INITIAL_PROJECTS, INITIAL_TASKS, INITIAL_TEAMS, INITIAL_NOTIFICATIONS, INITIAL_TEMPLATES, INITIAL_ACTIVITIES, INITIAL_ROLES, SYSTEM_PERMISSIONS, INITIAL_CATEGORIES 
 } from '../data/initialData';
 import { INITIAL_ASSETS, INITIAL_FOLDERS } from '../data/initialAssets';
 import { INITIAL_CONVERSATIONS, INITIAL_MESSAGES } from '../data/initialChatData';
@@ -62,6 +62,11 @@ interface AppContextType {
   setUserToEdit: (user: User | null) => void;
   isCreateRoleOpen: boolean;
   setIsCreateRoleOpen: (open: boolean) => void;
+  isEditRoleOpen: boolean;
+  setIsEditRoleOpen: (open: boolean) => void;
+  roleToEdit: SystemRole | null;
+  setRoleToEdit: (role: SystemRole | null) => void;
+  openEditRole: (role: SystemRole) => void;
   isTemplatesModalOpen: boolean;
   setIsTemplatesModalOpen: (open: boolean) => void;
   isTemplateEditorOpen: boolean;
@@ -87,6 +92,7 @@ interface AppContextType {
   updateRole: (roleId: string, updates: Partial<SystemRole>) => void;
   deleteRole: (roleId: string) => void;
   toggleRolePermission: (roleId: string, permissionId: string) => void;
+  toggleRoleStatus: (roleId: string) => void;
   hasPermission: (permissionId: string) => boolean;
 
   // Auth Operations
@@ -105,6 +111,14 @@ interface AppContextType {
   deleteSubtask: (taskId: string, subtaskId: string) => void;
   addComment: (taskId: string, text: string) => void;
   addAttachment: (taskId: string, file: { name: string; size: string; type: string; url?: string }) => void;
+  deleteAttachment: (taskId: string, attachmentId: string) => void;
+
+  // Categories Operations
+  categories: string[];
+  addCategory: (name: string) => void;
+  updateCategory: (oldName: string, newName: string) => void;
+  deleteCategory: (name: string) => void;
+  resetCategories: () => void;
   
   // Project Operations
   addProject: (projectData: Partial<Project> & { name: string }) => Project;
@@ -179,6 +193,11 @@ interface AppContextType {
     shareData: { targetId: string; targetType: 'user' | 'team'; access: AssetAccessRight; targetName?: string }, 
     permissionLevel?: AssetPermissionLevel
   ) => void;
+  removeAssetShare: (assetId: string, targetId: string) => void;
+  hasAssetAccess: (
+    asset: DigitalAsset, 
+    action: 'view' | 'preview' | 'download' | 'upload' | 'edit_info' | 'rename' | 'move' | 'create_version' | 'delete' | 'restore' | 'share' | 'manage_access'
+  ) => boolean;
   batchDeleteAssets: (assetIds: string[], permanent?: boolean) => void;
   batchRestoreAssets: (assetIds: string[]) => void;
   batchMoveAssets: (assetIds: string[], targetFolderId: string | null) => void;
@@ -218,6 +237,7 @@ interface AppContextType {
   removeConversationMember: (convId: string, userId: string) => void;
   updateMemberRole: (convId: string, userId: string, role: ConversationRole) => void;
   toggleMuteConversation: (convId: string) => void;
+  updateConversationPermissions: (convId: string, writePermission: ChatWritePermission, deletePermission: ChatDeletePermission) => void;
   startDirectChatWithUser: (targetUserId: string) => string;
   openProjectChannel: (projectId: string) => string;
 
@@ -325,6 +345,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : INITIAL_TEMPLATES;
   });
 
+  const [categories, setCategories] = useState<string[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}categories`);
+    return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+  });
+
   const [activities, setActivities] = useState<ActivityLog[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}activities`);
     return saved ? JSON.parse(saved) : INITIAL_ACTIVITIES;
@@ -374,6 +399,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
+  const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
+  const [roleToEdit, setRoleToEdit] = useState<SystemRole | null>(null);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -456,9 +483,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}archive_dossiers`, JSON.stringify(archiveDossiers));
   }, [archiveDossiers]);
 
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}categories`, JSON.stringify(categories));
+  }, [categories]);
+
+  const addCategory = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || categories.includes(trimmed)) return;
+    setCategories(prev => [...prev, trimmed]);
+  };
+
+  const updateCategory = (oldName: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setCategories(prev => prev.map(c => c === oldName ? trimmed : c));
+    setProjects(prev => prev.map(p => p.category === oldName ? { ...p, category: trimmed } : p));
+  };
+
+  const deleteCategory = (name: string) => {
+    setCategories(prev => prev.filter(c => c !== name));
+  };
+
+  const resetCategories = () => {
+    setCategories(INITIAL_CATEGORIES);
+  };
+
   const openEditProject = (proj: Project) => {
     setProjectToEdit(proj);
     setIsEditProjectOpen(true);
+  };
+
+  const openEditRole = (role: SystemRole) => {
+    setRoleToEdit(role);
+    setIsEditRoleOpen(true);
   };
 
   const openEditAsset = (asset: DigitalAsset) => {
@@ -804,10 +861,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const toggleRoleStatus = (roleId: string) => {
+    setRoles(prev => prev.map(role => {
+      if (role.id === roleId) {
+        const newStatus = role.isActive === false ? true : false;
+        return { ...role, isActive: newStatus, updatedAt: new Date().toISOString() };
+      }
+      return role;
+    }));
+
+    const targetRole = roles.find(r => r.id === roleId);
+    logActivity({
+      userId: currentUser.id,
+      action: `وضعیت نقش "${targetRole?.name || 'نقش'}" را تغییر داد`,
+      type: 'role_updated',
+      details: targetRole?.isActive ? 'غیرفعال‌سازی نقش' : 'فعال‌سازی نقش'
+    });
+  };
+
   const hasPermission = (permissionId: string): boolean => {
     if (currentUser.role === 'admin') return true;
     const currentRoleObj = roles.find(r => r.key === currentUser.role || r.id === currentUser.roleId);
     if (!currentRoleObj) return true;
+    if (currentRoleObj.isActive === false) return false;
     return currentRoleObj.permissions.includes(permissionId);
   };
 
@@ -1261,6 +1337,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       projectName: targetProj?.name,
       details: `حجم فایل: ${file.size}`
     });
+  };
+
+  const deleteAttachment = (taskId: string, attachmentId: string) => {
+    const targetTask = tasks.find(t => t.id === taskId);
+    const targetProj = projects.find(p => p.id === targetTask?.projectId);
+    const targetAtt = targetTask?.attachments.find(a => a.id === attachmentId);
+
+    setTasks(prev =>
+      prev.map(task => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            attachments: task.attachments.filter(a => a.id !== attachmentId),
+            activityHistory: [
+              {
+                id: `act-${Date.now()}`,
+                userId: currentUser.id,
+                action: `فایل پیوست "${targetAtt?.name || 'فایل'}" را حذف کرد`,
+                type: 'attachment',
+                timestamp: new Date().toISOString()
+              },
+              ...task.activityHistory
+            ],
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return task;
+      })
+    );
+
+    if (targetAtt) {
+      logActivity({
+        userId: currentUser.id,
+        action: `فایل پیوست "${targetAtt.name}" را حذف کرد`,
+        type: 'attachment',
+        taskId,
+        taskTitle: targetTask?.title,
+        projectId: targetProj?.id,
+        projectName: targetProj?.name
+      });
+    }
   };
 
   // Project Operations
@@ -2003,6 +2120,100 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const removeAssetShare = (assetId: string, targetId: string) => {
+    setAssets(prev => prev.map(a => {
+      if (a.id !== assetId) return a;
+      return {
+        ...a,
+        sharedWith: a.sharedWith.filter(s => s.targetId !== targetId)
+      };
+    }));
+  };
+
+  const hasAssetAccess = (
+    asset: DigitalAsset, 
+    action: 'view' | 'preview' | 'download' | 'upload' | 'edit_info' | 'rename' | 'move' | 'create_version' | 'delete' | 'restore' | 'share' | 'manage_access'
+  ): boolean => {
+    // 1. Super Admin has full unrestricted access
+    if (currentUser.role === 'admin') return true;
+
+    // 2. Check general system permission required for this action
+    const actionToPermMap: Record<string, string> = {
+      view: 'assets.view',
+      preview: 'assets.preview',
+      download: 'assets.download',
+      upload: 'assets.upload',
+      edit_info: 'assets.edit_info',
+      rename: 'assets.rename',
+      move: 'assets.move',
+      create_version: 'assets.create_version',
+      delete: 'assets.delete',
+      restore: 'assets.restore',
+      share: 'assets.share',
+      manage_access: 'assets.manage_access',
+    };
+
+    const requiredPerm = actionToPermMap[action];
+    if (requiredPerm && !hasPermission(requiredPerm)) {
+      return false;
+    }
+
+    // 3. Creator of the asset has full access
+    if (asset.createdBy === currentUser.id) {
+      return true;
+    }
+
+    // 4. Fine-grained Access Control List (sharedWith)
+    const userTeamIds = teams.filter(t => t.memberIds.includes(currentUser.id)).map(t => t.id);
+    const matchedShares = (asset.sharedWith || []).filter(sw => 
+      (sw.targetType === 'user' && sw.targetId === currentUser.id) ||
+      (sw.targetType === 'team' && userTeamIds.includes(sw.targetId))
+    );
+
+    if (matchedShares.length > 0) {
+      const rights = matchedShares.map(s => s.access);
+      const hasAdmin = rights.includes('manage') || rights.includes('admin');
+      const hasEdit = hasAdmin || rights.includes('edit');
+      const hasDownload = hasEdit || rights.includes('view_and_download') || rights.includes('view') || rights.includes('comment');
+      const hasView = hasDownload || rights.includes('view_only');
+
+      if (action === 'delete' || action === 'restore' || action === 'manage_access' || action === 'share') {
+        return hasAdmin;
+      }
+      if (action === 'edit_info' || action === 'rename' || action === 'move' || action === 'create_version') {
+        return hasEdit;
+      }
+      if (action === 'download') {
+        return hasDownload;
+      }
+      if (action === 'view' || action === 'preview') {
+        return hasView;
+      }
+    }
+
+    // 5. Organization level check
+    if (asset.permissionLevel === 'organization') {
+      if (['view', 'preview', 'download'].includes(action)) return true;
+    }
+
+    // 6. Project level check
+    if (asset.permissionLevel === 'project' && asset.projectId) {
+      const project = projects.find(p => p.id === asset.projectId);
+      if (project) {
+        if (project.managerId === currentUser.id) return true;
+        if (project.memberIds.includes(currentUser.id) && ['view', 'preview', 'download'].includes(action)) return true;
+      }
+    }
+
+    // 7. Team level check
+    if (asset.permissionLevel === 'team') {
+      const userTeams = teams.filter(t => t.memberIds.includes(currentUser.id));
+      if (userTeams.length > 0 && ['view', 'preview', 'download'].includes(action)) return true;
+    }
+
+    return false;
+  };
+
   const batchDeleteAssets = (assetIds: string[], permanent: boolean = false) => {
     const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
     if (permanent) {
@@ -2252,6 +2463,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const createConversation = (data: Partial<Conversation> & { name: string; type: ChatType; memberIds: string[] }) => {
+    // Prevent duplicate direct chats between same users
+    if (data.type === 'direct') {
+      const otherUserId = data.memberIds.find(id => id !== currentUser.id) || data.memberIds[0];
+      if (otherUserId) {
+        const existingDirect = conversations.find(
+          c => c.type === 'direct' && c.memberIds.includes(currentUser.id) && c.memberIds.includes(otherUserId)
+        );
+        if (existingDirect) {
+          setActiveConversationId(existingDirect.id);
+          setActiveView('messages');
+          return existingDirect;
+        }
+      }
+    }
+
     const dateStr = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date());
     const memberObjects: ConversationMember[] = data.memberIds.map(uid => ({
       userId: uid,
@@ -2276,6 +2502,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: data.description || '',
       projectId: data.projectId,
       teamId: data.teamId,
+      writePermission: data.writePermission || (data.type === 'channel' ? 'admins_only' : 'all'),
+      deletePermission: data.deletePermission || 'authors_and_admins',
       members: memberObjects,
       memberIds: data.memberIds,
       unreadCount: 0,
@@ -2293,6 +2521,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateConversation = (convId: string, updates: Partial<Conversation>) => {
     setConversations(prev => prev.map(c => c.id === convId ? { ...c, ...updates } : c));
+  };
+
+  const updateConversationPermissions = (
+    convId: string,
+    writePermission: ChatWritePermission,
+    deletePermission: ChatDeletePermission
+  ) => {
+    setConversations(prev =>
+      prev.map(c =>
+        c.id === convId
+          ? {
+              ...c,
+              writePermission,
+              deletePermission
+            }
+          : c
+      )
+    );
   };
 
   const addConversationMembers = (convId: string, newMemberIds: string[]) => {
@@ -3144,6 +3390,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleAssetFavorite,
         addAssetComment,
         shareAsset,
+        removeAssetShare,
+        hasAssetAccess,
         batchDeleteAssets,
         batchRestoreAssets,
         batchMoveAssets,
@@ -3172,8 +3420,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         removeConversationMember,
         updateMemberRole,
         toggleMuteConversation,
+        updateConversationPermissions,
         startDirectChatWithUser,
         openProjectChannel,
+        // Categories
+        categories,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        resetCategories,
         // Think Tank (اتاق فکر)
         ideas,
         thinkTankMeetings,
@@ -3257,6 +3512,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserToEdit,
         isCreateRoleOpen,
         setIsCreateRoleOpen,
+        isEditRoleOpen,
+        setIsEditRoleOpen,
+        roleToEdit,
+        setRoleToEdit,
+        openEditRole,
         isTemplatesModalOpen,
         setIsTemplatesModalOpen,
         isTemplateEditorOpen,
@@ -3278,6 +3538,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateRole,
         deleteRole,
         toggleRolePermission,
+        toggleRoleStatus,
         hasPermission,
         registerUser,
         loginWithCredentials,
@@ -3292,6 +3553,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteSubtask,
         addComment,
         addAttachment,
+        deleteAttachment,
         addProject,
         updateProject,
         deleteProject,

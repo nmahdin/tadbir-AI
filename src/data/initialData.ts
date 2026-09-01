@@ -1,51 +1,99 @@
 import { User, Project, Task, Team, AppNotification, ProjectTemplate, ActivityLog, SystemRole, PermissionItem } from '../types';
 
+export const INITIAL_CATEGORIES: string[] = [
+  'تولید محتوا و رسانه',
+  'تحریریه و پایگاه خبری',
+  'طراحی گرافیک و هویت بصری',
+  'تدوین ویدئو و موشن‌گرافی',
+  'پادکست و تولید صوتی',
+  'شبکه‌های اجتماعی و انتشار',
+  'پویش و کمپین رسانه‌ای',
+  'عکاسی و تصویربرداری',
+  'روابط عمومی و رویدادها',
+  'فناوری و زیرساخت رسانه'
+];
+
 export const SYSTEM_PERMISSIONS: PermissionItem[] = [
-  // مدیریت کاربران
-  { id: 'users.view', label: 'مشاهده لیست کاربران', description: 'امکان مشاهده اسامی، پروفایل و جزئیات کاربران سامانه', category: 'users' },
-  { id: 'users.create', label: 'ایجاد کاربر جدید', description: 'امکان افزودن و ارسال دعوت‌نامه به اعضای جدید', category: 'users' },
-  { id: 'users.edit', label: 'ویرایش اطلاعات کاربر', description: 'تغییر مشخصات، نقش و سطح دسترسی کاربران', category: 'users' },
-  { id: 'users.status', label: 'تغییر وضعیت و مسدودسازی', description: 'فعال، غیرفعال، معلق یا مسدودسازی حساب کاربری', category: 'users' },
+  // مدیریت کاربران (Users)
+  { id: 'users.view', label: 'مشاهده لیست کاربران', description: 'امکان مشاهده اسامی، اطلاعات هویتی و عناوین سازمانی', category: 'users' },
+  { id: 'users.view_details', label: 'مشاهده جزئیات و پروفایل کاربر', description: 'دسترسی به لاگ‌ها، مهارت‌ها، سوابق ورود و اطلاعات تماس', category: 'users' },
+  { id: 'users.create', label: 'ایجاد کاربر جدید', description: 'امکان تعریف کاربر جدید، تعیین رمز عبور موقت و ارسال مشخصات', category: 'users' },
+  { id: 'users.edit', label: 'ویرایش مشخصات کاربر', description: 'ویرایش نام، ایمیل، دپارتمان، مهارت‌ها و نقش سازمانی', category: 'users' },
+  { id: 'users.status', label: 'تغییر وضعیت و مسدودسازی', description: 'امکان فعال‌سازی، غیرفعال‌سازی، تعلیق و مسدودسازی حساب', category: 'users' },
   { id: 'users.delete', label: 'حذف کاربر از سیستم', description: 'حذف دائمی رکورد کاربر از سامانه تدبیر', category: 'users' },
 
-  // مدیریت پروژه‌ها
+  // مدیریت نقش‌ها و ماتریس دسترسی (Roles & Permissions)
+  { id: 'roles.view', label: 'مشاهده لیست نقش‌ها', description: 'مشاهده نقش‌های سیستمی و سفارشی و تعداد کاربران منتسب', category: 'roles' },
+  { id: 'roles.create', label: 'تعریف نقش جدید', description: 'ایجاد نقش سازمانی جدید با عنوان و رنگ اختصاصی', category: 'roles' },
+  { id: 'roles.edit', label: 'ویرایش مشخصات نقش', description: 'تغییر نام، رنگ و توضیحات نقش‌های سازمانی', category: 'roles' },
+  { id: 'roles.manage_permissions', label: 'مدیریت مجوزها و ماتریس دسترسی', description: 'تخصیص یا سلب دسترسی‌های عملیاتی از نقش‌ها', category: 'roles' },
+  { id: 'roles.delete', label: 'حذف نقش سازمانی', description: 'حذف نقش‌های سفارشی تعریف شده', category: 'roles' },
+
+  // مدیریت پروژه‌ها (Projects)
   { id: 'projects.view', label: 'مشاهده پروژه‌ها', description: 'دسترسی به فهرست پروژه‌ها و جزئیات پیشرفت', category: 'projects' },
-  { id: 'projects.create', label: 'ایجاد پروژه جدید', description: 'تعریف پروژه با الگوهای سفارشی و تخصیص تیم', category: 'projects' },
-  { id: 'projects.edit', label: 'ویرایش مشخصات و بودجه پروژه', description: 'تغییر تاریخ‌ها، بودجه، مدیر پروژه و اولویت‌ها', category: 'projects' },
-  { id: 'projects.delete', label: 'حذف و بایگانی پروژه', description: 'آرشیو کردن یا حذف فیزیکی پروژه‌ها', category: 'projects' },
+  { id: 'projects.create', label: 'ایجاد پروژه جدید', description: 'تعریف پروژه با الگوهای سفارشی، بودجه و تیم', category: 'projects' },
+  { id: 'projects.edit', label: 'ویرایش مشخصات پروژه', description: 'تغییر تاریخ‌ها، وضعیت، بودجه، مدیر پروژه و اعضا', category: 'projects' },
+  { id: 'projects.delete', label: 'حذف و بایگانی پروژه', description: 'آرشیو کردن یا حذف کامل پروژه و اطلاعات آن', category: 'projects' },
 
-  // مدیریت تیم‌ها
-  { id: 'teams.view', label: 'مشاهده ساختار تیم‌ها', description: 'دیدن اعضا، دپارتمان‌ها و سرپرستان تیم', category: 'teams' },
-  { id: 'teams.create', label: 'ایجاد تیم جدید', description: 'تشکیل کارگروه‌ها و تیم‌های فنی/تخصصی', category: 'teams' },
-  { id: 'teams.edit', label: 'ویرایش و تخصیص اعضا', description: 'جابجایی اعضا بین تیم‌ها و تعیین سرپرست', category: 'teams' },
-  { id: 'teams.delete', label: 'انحلال یا حذف تیم', description: 'حذف کارگروه‌ها و بازتوزیع مسئولیت‌ها', category: 'teams' },
-
-  // مدیریت وظایف (تسک‌ها)
+  // مدیریت وظایف (Tasks)
   { id: 'tasks.view', label: 'مشاهده وظایف', description: 'دسترسی به بردهای کانبان، لیست‌ها و تایم‌لاین وظایف', category: 'tasks' },
-  { id: 'tasks.create', label: 'تعریف وظیفه جدید', description: 'ایجاد تسک با زیروظایف، برچسب‌ها و تعیین مسئول', category: 'tasks' },
-  { id: 'tasks.edit', label: 'ویرایش و تغییر وضعیت', description: 'تغییر مرحله، انتقال به ستون بعدی و زمان‌بندی', category: 'tasks' },
-  { id: 'tasks.delete', label: 'حذف وظایف', description: 'حذف تسک‌های منقضی یا اشتباه', category: 'tasks' },
+  { id: 'tasks.create', label: 'تعریف وظیفه جدید', description: 'ایجاد تسک با زیروظایف، برچسب‌ها، فوریت و پیوست‌ها', category: 'tasks' },
+  { id: 'tasks.edit', label: 'ویرایش اطلاعات وظیفه', description: 'تغییر عنوان، توضیحات، تخمین زمان و برچسب‌های تسک', category: 'tasks' },
+  { id: 'tasks.assign', label: 'تخصیص و تغییر مسئول وظیفه', description: 'واگذاری تسک به افراد تیم و تغییر مجری', category: 'tasks' },
+  { id: 'tasks.status', label: 'تغییر وضعیت وظیفه', description: 'انتقال تسک بین ستون‌های کانبان و تکمیل وظایف', category: 'tasks' },
+  { id: 'tasks.delete', label: 'حذف وظایف', description: 'حذف تسک‌های منقضی یا اشتباه از برد پروژه', category: 'tasks' },
 
-  // گزارش‌ها و تحلیل‌ها
-  { id: 'reports.view', label: 'مشاهده گزارش‌های مدیریتی', description: 'دسترسی به نمودارهای بازدهی، سرعت اسپرینت و توزیع بار کاری', category: 'reports' },
-  { id: 'reports.export', label: 'خروجی اکسل و PDF', description: 'استخراج داده‌های آماری و فعالیت‌ها با فرمت‌های مختلف', category: 'reports' },
+  // مدیریت تیم‌ها (Teams)
+  { id: 'teams.view', label: 'مشاهده ساختار تیم‌ها', description: 'دیدن اعضا، دپارتمان‌ها و سرپرستان تیم', category: 'teams' },
+  { id: 'teams.create', label: 'ایجاد تیم جدید', description: 'تشکیل کارگروه‌ها و تیم‌های تخصصی سازمانی', category: 'teams' },
+  { id: 'teams.edit', label: 'ویرایش و تخصیص اعضای تیم', description: 'جابجایی اعضا، تعیین سرپرست و تغییر دپارتمان', category: 'teams' },
+  { id: 'teams.delete', label: 'انحلال یا حذف تیم', description: 'حذف کارگروه و آزادسازی اعضا', category: 'teams' },
 
-  // اتاق فکر و نوآوری
-  { id: 'thinktank.view', label: 'مشاهده اتاق فکر و ایده‌ها', description: 'دسترسی به فهرست ایده‌ها، جلسات و مصوبات اتاق فکر', category: 'thinktank' },
-  { id: 'thinktank.create_idea', label: 'ثبت و پیشنهاد ایده جدید', description: 'امکان ثبت ایده، چالش‌ها و پیوست مستندات به اتاق فکر', category: 'thinktank' },
-  { id: 'thinktank.vote_comment', label: 'رأی‌دهی و ثبت دیدگاه', description: 'امکان شرکت در نظرسنجی‌ها، ارزیابی و مباحثات تخصصی', category: 'thinktank' },
-  { id: 'thinktank.manage_meetings', label: 'مدیریت جلسات و صورتجلسات', description: 'برگزاری رویدادهای بارش فکری و ثبت تصمیمات', category: 'thinktank' },
-  { id: 'thinktank.convert', label: 'تبدیل ایده به پروژه و وظیفه', description: 'ارتقای ایده‌های مصوب به تسک یا پروژه اجرایی در سامانه', category: 'thinktank' },
+  // دارایی‌های دیجیتال (DAM - Digital Asset Management)
+  { id: 'assets.view', label: 'مشاهده فایل‌ها و پوشه‌ها', description: 'دسترسی به محیط مدیریت دارایی‌های دیجیتال و کاوشگر فایل', category: 'dam' },
+  { id: 'assets.preview', label: 'پیش‌نمایش محتوای فایل', description: 'مشاهده فایل‌های تصویری، صوتی، ویدئویی و اسناد بدون نیاز به دانلود', category: 'dam' },
+  { id: 'assets.download', label: 'دانلود فایل‌ها', description: 'امکان دانلود مستقیم فایل‌ها و نسخه‌های مختلف', category: 'dam' },
+  { id: 'assets.upload', label: 'بارگذاری فایل و ایجاد پوشه', description: 'آپلود فایل‌های جدید به مخزن دارایی‌ها و پوشه‌بندی', category: 'dam' },
+  { id: 'assets.edit_info', label: 'ویرایش اطلاعات و متادیتا', description: 'تغییر عنوان، برچسب‌ها، دسته‌بندی و انتساب به پروژه/تسک', category: 'dam' },
+  { id: 'assets.rename', label: 'تغییر نام فایل و پوشه', description: 'امکان ویرایش نام فایل‌ها و پوشه‌های مخزن', category: 'dam' },
+  { id: 'assets.move', label: 'جابه‌جایی و سازماندهی فایل‌ها', description: 'انتقال فایل‌ها بین پوشه‌ها و ساختارهای دایرکتوری', category: 'dam' },
+  { id: 'assets.create_version', label: 'ایجاد نسخه جدید فایل', description: 'بارگذاری نسخه به‌روزرسانی شده با ثبت لاگ تغییرات', category: 'dam' },
+  { id: 'assets.delete', label: 'حذف فایل و پوشه', description: 'انتقال فایل‌ها به سطل زباله یا حذف دائمی', category: 'dam' },
+  { id: 'assets.restore', label: 'بازیابی از سطل زباله', description: 'بازگردانی فایل‌ها و پوشه‌های حذف شده به وضعیت فعال', category: 'dam' },
+  { id: 'assets.share', label: 'اشتراک‌گذاری فایل', description: 'ایجاد لینک اشتراک و ارائه دسترسی به اعضا یا تیم‌ها', category: 'dam' },
+  { id: 'assets.manage_access', label: 'مدیریت مجوزها و سطوح دسترسی فایل', description: 'تعیین سطح دسترسی (مشاهده، دانلود، ویرایش، مدیریت)', category: 'dam' },
 
-  // دبیرخانه و اتوماسیون اداری
-  { id: 'secretariat.view', label: 'مشاهده نامه‌ها و مکاتبات', description: 'دسترسی به کارتابل اداری، نامه‌های وارده، صادره و سوابق', category: 'secretariat' },
-  { id: 'secretariat.create_letter', label: 'ثبت نامه وارده و صدور نامه', description: 'ایجاد پیش‌نویس مکاتبه، صدور شماره اندیکاتور و بارگذاری اسناد', category: 'secretariat' },
-  { id: 'secretariat.refer_letter', label: 'ارجاع و هامش‌نویسی', description: 'ارجاع سازمانی نامه به اشخاص، تیم‌ها و تعیین مهلت اقدام', category: 'secretariat' },
-  { id: 'secretariat.manage_archive', label: 'مدیریت زونکن و بایگانی', description: 'طبقه‌بندی، امحا، دسته‌بندی محرمانه و کدگذاری اسناد', category: 'secretariat' },
-  { id: 'secretariat.manage_resolutions', label: 'مدیریت و پایش مصوبات سازمانی', description: 'ثبت مصوبات هیئت مدیره و تطبیق با تسک‌های اجرایی', category: 'secretariat' },
+  // پیام‌رسان و گفتگوها (Messaging)
+  { id: 'messaging.view', label: 'مشاهده گفتگوها و کانال‌ها', description: 'دسترسی به پیام‌رسان سازمانی و مشاهده پیام‌ها', category: 'messaging' },
+  { id: 'messaging.create_chat', label: 'ایجاد گروه، کانال و گفتگوی مستقیم', description: 'تشکیل فضاهای گفتگوی تیمی و کانال‌های موضوعی', category: 'messaging' },
+  { id: 'messaging.send_message', label: 'ارسال پیام و پیوست', description: 'ارسال پیام متنی، ویس، تصویر و فایل در گفتگوها', category: 'messaging' },
+  { id: 'messaging.delete_message', label: 'حذف پیام‌ها', description: 'حذف پیام‌های ارسالی یا پیام‌های گروهی', category: 'messaging' },
+  { id: 'messaging.manage_group', label: 'مدیریت اعضا و اختیارات گروه', description: 'افزودن و حذف اعضا و تنظیم اختیارات ارسال پیام', category: 'messaging' },
 
-  // تنظیمات سامانه
-  { id: 'settings.manage', label: 'مدیریت تنظیمات سامانه تدبیر', description: 'پیکربندی هویت سازمان، تنظیمات امنیتی و چرخه اسپرینت‌ها', category: 'settings' }
+  // دبیرخانه و مکاتبات اداری (Secretariat)
+  { id: 'secretariat.view', label: 'مشاهده نامه‌ها و کارتابل اداری', description: 'دسترسی به فهرست نامه‌های وارده، صادره و داخلی', category: 'secretariat' },
+  { id: 'secretariat.create_letter', label: 'ثبت نامه و ایجاد پیش‌نویس', description: 'ثبت مکاتبه جدید با صدور شماره اندیکاتور و پیوست اسناد', category: 'secretariat' },
+  { id: 'secretariat.edit_letter', label: 'ویرایش اطلاعات و متن نامه', description: 'تغییر محتوا، فوریت، طبقه‌بندی و پیوست‌های نامه', category: 'secretariat' },
+  { id: 'secretariat.refer_letter', label: 'ارجاع سازمانی و هامش‌نویسی', description: 'ارجاع نامه به اشخاص/تیم‌ها و تعیین مهلت اقدام و دستور کار', category: 'secretariat' },
+  { id: 'secretariat.reply_letter', label: 'ثبت پاسخ و عطف مکاتبه', description: 'ایجاد نامه پیرو و پاسخ‌گویی به مکاتبات قبلی', category: 'secretariat' },
+  { id: 'secretariat.archive_letter', label: 'بایگانی و مدیریت زونکن‌ها', description: 'طبقه‌بندی اسناد در زونکن‌های بایگانی و کدگذاری اداری', category: 'secretariat' },
+  { id: 'secretariat.manage_resolutions', label: 'مدیریت و پیگیری مصوبات', description: 'ثبت مصوبات جلسات هیئت مدیره و تطبیق با تسک‌ها', category: 'secretariat' },
+
+  // اتاق فکر و ایده‌پردازی (Think Tank)
+  { id: 'thinktank.view', label: 'مشاهده ایده‌ها و اتاق فکر', description: 'دسترسی به ویترین ایده‌ها، چالش‌ها و جلسات بارش فکری', category: 'thinktank' },
+  { id: 'thinktank.create_idea', label: 'ثبت و پیشنهاد ایده جدید', description: 'ارائه طرح، تشریح مسئله و راه‌حل پیشنهادی به اتاق فکر', category: 'thinktank' },
+  { id: 'thinktank.edit_idea', label: 'ویرایش مشخصات ایده', description: 'به‌روزرسانی جزئیات، پیوست‌ها و توضیحات تکمیلی طرح', category: 'thinktank' },
+  { id: 'thinktank.delete_idea', label: 'حذف ایده', description: 'حذف ایده‌های نامربوط یا منسوخ شده', category: 'thinktank' },
+  { id: 'thinktank.manage_meetings', label: 'برگزاری و مدیریت جلسات هم‌اندیشی', description: 'تعریف جلسه بارش فکری، ثبت صورتجلسه و تصمیمات', category: 'thinktank' },
+  { id: 'thinktank.vote', label: 'رأی‌دهی و ثبت دیدگاه تخصصی', description: 'شرکت در نظرسنجی‌ها و ثبت ارزیابی و کامنت روی ایده‌ها', category: 'thinktank' },
+  { id: 'thinktank.approve_convert', label: 'تأیید ایده و تبدیل به تسک یا پروژه', description: 'تصویب ایده و ارتقای مستقیم آن به پروژه یا وظیفه اجرایی', category: 'thinktank' },
+
+  // گزارش‌ها و تحلیل‌ها (Reports)
+  { id: 'reports.view', label: 'مشاهده داشبوردها و گزارش‌های آماری', description: 'دسترسی به نمودارهای پیشرفت، بازدهی و بار کاری پرسنل', category: 'reports' },
+  { id: 'reports.export', label: 'استخراج داده‌ها و خروجی اکسل/PDF', description: 'دریافت گزارش‌های مستند و خروجی‌های ساختاریافته', category: 'reports' },
+
+  // تنظیمات سامانه (Settings)
+  { id: 'settings.manage', label: 'مدیریت پیکربندی و تنظیمات سامانه', description: 'تنظیمات عمومی سازمان، دوره‌های اسپرینت، تم و امنیت سیستم', category: 'settings' }
 ];
 
 export const INITIAL_ROLES: SystemRole[] = [
@@ -56,6 +104,7 @@ export const INITIAL_ROLES: SystemRole[] = [
     description: 'دسترسی کامل و تام‌الاختیار به کلیه ماژول‌های سامانه تدبیر، مدیریت کاربران، نقش‌ها، پروژه‌ها و زیرساخت.',
     color: '#6366f1',
     isSystem: true,
+    isActive: true,
     userCount: 1,
     permissions: SYSTEM_PERMISSIONS.map(p => p.id),
     createdAt: '2026-01-01'
@@ -67,15 +116,19 @@ export const INITIAL_ROLES: SystemRole[] = [
     description: 'اختیار کامل در ایجاد، زمان‌بندی و پایش پروژه‌ها، مدیریت وظایف تیم، مشاهده گزارش‌های تحلیلی و تخصیص منابع.',
     color: '#0ea5e9',
     isSystem: true,
+    isActive: true,
     userCount: 1,
     permissions: [
-      'users.view',
+      'users.view', 'users.view_details',
+      'roles.view',
       'projects.view', 'projects.create', 'projects.edit',
+      'tasks.view', 'tasks.create', 'tasks.edit', 'tasks.assign', 'tasks.status', 'tasks.delete',
       'teams.view', 'teams.edit',
-      'tasks.view', 'tasks.create', 'tasks.edit', 'tasks.delete',
-      'reports.view', 'reports.export',
-      'thinktank.view', 'thinktank.create_idea', 'thinktank.vote_comment', 'thinktank.manage_meetings', 'thinktank.convert',
-      'secretariat.view', 'secretariat.create_letter', 'secretariat.refer_letter', 'secretariat.manage_resolutions'
+      'assets.view', 'assets.preview', 'assets.download', 'assets.upload', 'assets.edit_info', 'assets.rename', 'assets.move', 'assets.create_version', 'assets.share',
+      'messaging.view', 'messaging.create_chat', 'messaging.send_message',
+      'secretariat.view', 'secretariat.create_letter', 'secretariat.refer_letter', 'secretariat.manage_resolutions',
+      'thinktank.view', 'thinktank.create_idea', 'thinktank.manage_meetings', 'thinktank.vote', 'thinktank.approve_convert',
+      'reports.view', 'reports.export'
     ],
     createdAt: '2026-01-01'
   },
@@ -83,18 +136,21 @@ export const INITIAL_ROLES: SystemRole[] = [
     id: 'role-member',
     key: 'team_member',
     name: 'عضو تیم و متخصص فنی (Team Member)',
-    description: 'مشاهده پروژه‌های منتسب، مدیریت وظایف واگذار شده، تغییر وضعیت، ثبت دیدگاه و پیوست فایل.',
+    description: 'مشاهده پروژه‌های منتسب، مدیریت وظایف واگذار شده، تغییر وضعیت، ثبت دیدگاه، ارتباطات و تبادل فایل.',
     color: '#10b981',
     isSystem: true,
+    isActive: true,
     userCount: 4,
     permissions: [
       'users.view',
       'projects.view',
+      'tasks.view', 'tasks.status',
       'teams.view',
-      'tasks.view', 'tasks.edit',
-      'reports.view',
-      'thinktank.view', 'thinktank.create_idea', 'thinktank.vote_comment',
-      'secretariat.view', 'secretariat.create_letter', 'secretariat.refer_letter'
+      'assets.view', 'assets.preview', 'assets.download', 'assets.upload',
+      'messaging.view', 'messaging.send_message',
+      'secretariat.view',
+      'thinktank.view', 'thinktank.create_idea', 'thinktank.vote',
+      'reports.view'
     ],
     createdAt: '2026-01-01'
   },
@@ -105,14 +161,16 @@ export const INITIAL_ROLES: SystemRole[] = [
     description: 'کنترل کیفیت خروجی‌ها، ثبت موانع و باگ‌های بحرانی، تست سناریوهای کاربری و تأیید نهایی وظایف.',
     color: '#f59e0b',
     isSystem: false,
+    isActive: true,
     userCount: 1,
     permissions: [
       'users.view',
       'projects.view',
-      'tasks.view', 'tasks.edit', 'tasks.create',
-      'reports.view',
-      'thinktank.view', 'thinktank.create_idea', 'thinktank.vote_comment',
-      'secretariat.view'
+      'tasks.view', 'tasks.create', 'tasks.edit', 'tasks.status',
+      'assets.view', 'assets.preview', 'assets.download',
+      'messaging.view', 'messaging.send_message',
+      'thinktank.view', 'thinktank.create_idea', 'thinktank.vote',
+      'reports.view'
     ],
     createdAt: '2026-03-15'
   }

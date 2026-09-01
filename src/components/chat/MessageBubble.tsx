@@ -43,6 +43,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   const {
     currentUser,
+    conversations,
     togglePinMessage,
     toggleStarMessage,
     toggleMessageReaction,
@@ -54,6 +55,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+
+  const conv = conversations.find(c => c.id === message.conversationId);
+  const memberInfo = conv?.members?.find(m => m.userId === currentUser.id);
+  const isConvAdmin = memberInfo?.role === 'owner' || memberInfo?.role === 'admin' || currentUser.role === 'admin';
+
+  const canDelete =
+    isConvAdmin ||
+    (isMe &&
+      (!conv ||
+        conv.type === 'direct' ||
+        (conv.deletePermission !== 'admins_only' && conv.deletePermission !== 'none')));
 
   const handleTaskClick = (taskId: string) => {
     setSelectedTaskId(taskId);
@@ -389,8 +401,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </button>
         )}
 
-        {/* Delete Button (For own messages or admins) */}
-        {(isMe || currentUser.role === 'admin') && (
+        {/* Delete Button (Based on conversation delete permissions or admin) */}
+        {canDelete && (
           <button
             onClick={() => deleteMessage(message.id)}
             title="حذف پیام"

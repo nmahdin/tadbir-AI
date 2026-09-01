@@ -13,11 +13,30 @@ import {
   UserCheck,
   Users,
   ShieldCheck,
-  ArrowLeft
+  ArrowLeft,
+  Tags,
+  Plus,
+  Edit2,
+  Trash2,
+  Check,
+  X,
+  FolderPlus
 } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
-  const { currentUser, resetData, setActiveView, roles, users } = useApp();
+  const { 
+    currentUser, 
+    resetData, 
+    setActiveView, 
+    roles, 
+    users, 
+    categories, 
+    addCategory, 
+    updateCategory, 
+    deleteCategory, 
+    resetCategories 
+  } = useApp();
+
   const [orgName, setOrgName] = useState('سامانه سازمانی تدبیر');
   const [workspaceSlug, setWorkspaceSlug] = useState('tadbir-corp');
   const [defaultSprintLength, setDefaultSprintLength] = useState('2 weeks');
@@ -26,6 +45,31 @@ export const SettingsView: React.FC = () => {
   const [mentionAlerts, setMentionAlerts] = useState(true);
   const [twoFactorEnforced, setTwoFactorEnforced] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Category Management State
+  const [newCatInput, setNewCatInput] = useState('');
+  const [editingCatIndex, setEditingCatIndex] = useState<number | null>(null);
+  const [editingCatValue, setEditingCatValue] = useState('');
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatInput.trim()) return;
+    addCategory(newCatInput.trim());
+    setNewCatInput('');
+  };
+
+  const startEditCategory = (index: number, cat: string) => {
+    setEditingCatIndex(index);
+    setEditingCatValue(cat);
+  };
+
+  const saveEditCategory = (oldCat: string) => {
+    if (editingCatValue.trim() && editingCatValue.trim() !== oldCat) {
+      updateCategory(oldCat, editingCatValue.trim());
+    }
+    setEditingCatIndex(null);
+    setEditingCatValue('');
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +86,7 @@ export const SettingsView: React.FC = () => {
           <span>تنظیمات عمومی سامانه تدبیر</span>
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          پیکربندی هویت سازمان، قوانین همکاری، امنیت و اعلانات درون‌برنامه‌ای
+          پیکربندی هویت سازمان، دسته‌بندی‌های پروژه‌ها، امنیت و اعلانات درون‌برنامه‌ای
         </p>
       </div>
 
@@ -95,6 +139,138 @@ export const SettingsView: React.FC = () => {
           <span>تنظیمات با موفقیت ذخیره و در سامانه تدبیر اعمال شد.</span>
         </div>
       )}
+
+      {/* Category Management Section */}
+      <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Tags className="w-5 h-5 text-indigo-600" />
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">مدیریت دسته‌بندی‌های سامانه و پروژه‌ها</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                دسته‌بندی‌های قابل انتخاب در تعریف پروژه‌ها، تسک‌ها، الگوها و اتاق فکر
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm('آیا مایلید لیست دسته‌بندی‌ها به عناوین پیش‌فرض رسانه‌ای تدبیر بازگردانی شود؟')) {
+                resetCategories();
+              }
+            }}
+            className="text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer flex items-center gap-1"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>بازگردانی دسته‌بندی‌های پیش‌فرض</span>
+          </button>
+        </div>
+
+        {/* Add new category input */}
+        <form onSubmit={handleAddCategory} className="flex items-center gap-2.5">
+          <div className="relative flex-1">
+            <FolderPlus className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={newCatInput}
+              onChange={(e) => setNewCatInput(e.target.value)}
+              placeholder="افزودن دسته‌بندی جدید (مثال: مستندسازی و آرشیو، پادکست و صدا، پویش تبلیغاتی)..."
+              className="w-full pr-10 pl-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-hidden transition-all"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!newCatInput.trim()}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>افزودن دسته‌بندی</span>
+          </button>
+        </form>
+
+        {/* Categories List */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-2">
+          {categories.map((cat, idx) => {
+            const isEditing = editingCatIndex === idx;
+
+            return (
+              <div
+                key={cat + idx}
+                className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 group hover:border-indigo-200 hover:bg-indigo-50/20 transition-all"
+              >
+                {isEditing ? (
+                  <div className="flex items-center gap-1.5 w-full">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={editingCatValue}
+                      onChange={(e) => setEditingCatValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEditCategory(cat);
+                        if (e.key === 'Escape') setEditingCatIndex(null);
+                      }}
+                      className="w-full px-2 py-1 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-slate-900 focus:outline-hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => saveEditCategory(cat)}
+                      className="p-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer"
+                      title="ذخیره تغییرات"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCatIndex(null)}
+                      className="p-1 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 cursor-pointer"
+                      title="انصراف"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                      <span className="text-xs font-bold text-slate-800 truncate" title={cat}>
+                        {cat}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => startEditCategory(idx, cat)}
+                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
+                        title="ویرایش دسته‌بندی"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (categories.length <= 1) {
+                            alert('حداقل یک دسته‌بندی باید در سامانه فعال باشد.');
+                            return;
+                          }
+                          if (confirm(`آیا از حذف دسته‌بندی «${cat}» اطمینان دارید؟`)) {
+                            deleteCategory(cat);
+                          }
+                        }}
+                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="حذف دسته‌بندی"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Org Profile */}

@@ -37,7 +37,7 @@ export interface PermissionItem {
   id: string;
   label: string;
   description: string;
-  category: 'users' | 'projects' | 'teams' | 'tasks' | 'reports' | 'settings' | 'dam' | 'messaging' | 'thinktank' | 'secretariat';
+  category: 'users' | 'roles' | 'projects' | 'teams' | 'tasks' | 'dam' | 'messaging' | 'secretariat' | 'thinktank' | 'reports' | 'settings';
 }
 
 export interface SystemRole {
@@ -47,6 +47,7 @@ export interface SystemRole {
   description: string;
   color: string;
   isSystem: boolean;
+  isActive?: boolean;
   userCount?: number;
   permissions: string[];
   createdAt: string;
@@ -254,7 +255,7 @@ export type AssetCategory = 'image' | 'video' | 'audio' | 'document' | 'archive'
 
 export type AssetPermissionLevel = 'private' | 'team' | 'project' | 'organization';
 
-export type AssetAccessRight = 'view' | 'edit' | 'manage';
+export type AssetAccessRight = 'view_only' | 'view_and_download' | 'view' | 'comment' | 'edit' | 'manage' | 'admin';
 
 export type DamSubView = 
   | 'all' 
@@ -429,6 +430,9 @@ export interface ConversationMember {
   muted?: boolean;
 }
 
+export type ChatWritePermission = 'all' | 'admins_only';
+export type ChatDeletePermission = 'authors_and_admins' | 'admins_only' | 'all';
+
 export interface Conversation {
   id: string;
   type: ChatType; // 'direct' | 'group' | 'channel'
@@ -450,6 +454,8 @@ export interface Conversation {
   pinnedMessageIds?: string[];
   isArchived?: boolean;
   isMuted?: boolean;
+  writePermission?: ChatWritePermission; // 'all' (پیش‌فرض) یا 'admins_only' (فقط مدیران)
+  deletePermission?: ChatDeletePermission; // 'authors_and_admins' | 'admins_only' | 'all'
   createdAt: string;
   updatedAt: string;
 }
@@ -532,6 +538,11 @@ export interface Idea {
   pollQuestion?: string;
   pollOptions?: { id: string; text: string; votes: string[] }[];
   targetDepartment?: string;
+  targetAudience?: string; // مخاطب هدف رسانه‌ای
+  mediaGoal?: string; // هدف رسانه‌ای
+  contentFormat?: string; // قالب محتوا (پست، ویدئو، گزارش، اینفوگرافیک، پادکست...)
+  mediaTopic?: string; // موضوع و محور رسانه‌ای
+  executionProposal?: string; // پیشنهاد اجرایی
   estimatedBudget?: string;
   estimatedEffort?: string;
   createdAt: string;
@@ -641,11 +652,20 @@ export interface LetterWorkflowStep {
   status: 'completed' | 'current' | 'pending';
 }
 
+export type MediaLetterCategory = 
+  | 'content_request'     // درخواست تولید محتوا
+  | 'design_request'      // درخواست طراحی و گرافیک
+  | 'publishing_request'  // درخواست انتشار و پخش
+  | 'assignment'          // مأموریت و ارجاع کار رسانه‌ای
+  | 'official_letter'     // نامه رسمی اداری
+  | 'general';            // عمومی و متفرقه
+
 export interface SecretariatLetter {
   id: string;
   letterNumber: string; // e.g. "وارده: دب-۱۴۰۵/۳۲۰" or "صادره: صاد-۱۴۰۵/۰۸۲"
   indicatNumber?: string; // شماره اندیکاتور
   type: LetterType;
+  mediaCategory?: MediaLetterCategory; // دسته‌بندی رسانه‌ای
   subject: string;
   content: string;
   sender: string; // سازمان یا شخص فرستنده

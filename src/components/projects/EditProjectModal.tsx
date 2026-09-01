@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Priority, ProjectStatus, Project } from '../../types';
+import { PersianDatePicker } from '../common/PersianDatePicker';
 import { 
   X, 
   FolderKanban, 
@@ -13,7 +14,8 @@ import {
   DollarSign, 
   Palette, 
   Tag, 
-  ShieldCheck 
+  ShieldCheck,
+  Pipette
 } from 'lucide-react';
 
 export const EditProjectModal: React.FC = () => {
@@ -24,6 +26,7 @@ export const EditProjectModal: React.FC = () => {
     setProjectToEdit,
     updateProject,
     deleteProject,
+    categories,
     users,
     currentUser,
     projects,
@@ -34,7 +37,7 @@ export const EditProjectModal: React.FC = () => {
   const [name, setName] = useState('');
   const [key, setKey] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('مهندسی نرم‌افزار');
+  const [category, setCategory] = useState(categories[0] || 'تولید محتوا و رسانه');
   const [projectManagerId, setProjectManagerId] = useState('');
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [priority, setPriority] = useState<Priority>('medium');
@@ -51,7 +54,7 @@ export const EditProjectModal: React.FC = () => {
       setName(projectToEdit.name || '');
       setKey(projectToEdit.key || '');
       setDescription(projectToEdit.description || '');
-      setCategory(projectToEdit.category || 'مهندسی نرم‌افزار');
+      setCategory(projectToEdit.category || categories[0] || 'تولید محتوا و رسانه');
       setProjectManagerId(projectToEdit.projectManagerId || currentUser.id);
       setSelectedMemberIds(projectToEdit.memberIds || [currentUser.id]);
       setPriority(projectToEdit.priority || 'medium');
@@ -63,7 +66,7 @@ export const EditProjectModal: React.FC = () => {
       setTagInput((projectToEdit.tags || []).join(', '));
       setShowDeleteConfirm(false);
     }
-  }, [projectToEdit, currentUser.id]);
+  }, [projectToEdit, currentUser.id, categories]);
 
   if (!isEditProjectOpen || !projectToEdit) return null;
 
@@ -122,20 +125,25 @@ export const EditProjectModal: React.FC = () => {
     '#3b82f6', // Blue
     '#0ea5e9', // Sky
     '#10b981', // Emerald
+    '#14b8a6', // Teal
     '#f59e0b', // Amber
+    '#f97316', // Orange
+    '#ef4444', // Red
     '#ec4899', // Pink
     '#8b5cf6', // Purple
-    '#ef4444', // Red
-    '#14b8a6', // Teal
+    '#64748b', // Slate
   ];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 text-right" dir="rtl">
       <div className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-indigo-50/30">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-200">
+            <div 
+              className="p-2.5 rounded-2xl text-white shadow-md transition-colors"
+              style={{ backgroundColor: color }}
+            >
               <FolderKanban className="w-5 h-5" />
             </div>
             <div>
@@ -192,7 +200,7 @@ export const EditProjectModal: React.FC = () => {
         ) : null}
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4.5 max-h-[75vh] overflow-y-auto">
           {/* Row 1: Title & Key */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div className="sm:col-span-2 space-y-1.5">
@@ -204,8 +212,8 @@ export const EditProjectModal: React.FC = () => {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="مثال: توسعه ماژول هوش مصنوعی"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-hidden transition-all"
+                placeholder="مثال: توسعه پلتفرم رسانه‌ای"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-hidden transition-all font-bold"
               />
             </div>
             <div className="space-y-1.5">
@@ -217,9 +225,9 @@ export const EditProjectModal: React.FC = () => {
                 required
                 value={key}
                 onChange={(e) => setKey(e.target.value.toUpperCase())}
-                placeholder="TDB"
+                placeholder="DOC"
                 maxLength={8}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-mono uppercase text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-hidden transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-mono uppercase text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-hidden transition-all text-left font-bold"
               />
             </div>
           </div>
@@ -249,12 +257,9 @@ export const EditProjectModal: React.FC = () => {
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-hidden"
               >
-                <option value="مهندسی نرم‌افزار">مهندسی نرم‌افزار</option>
-                <option value="هوش مصنوعی">هوش مصنوعی و یادگیری ماشین</option>
-                <option value="امنیت و شبکه">امنیت و زیرساخت شبکه</option>
-                <option value="طراحی محصول و تجربه کاربری">طراحی محصول و تجربه کاربری</option>
-                <option value="بازاریابی دیجیتال">بازاریابی و محتوا</option>
-                <option value="عملیات و مدیریت منابع">عملیات و مدیریت منابع</option>
+                {categories.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
 
@@ -284,10 +289,10 @@ export const EditProjectModal: React.FC = () => {
                 onChange={(e) => setPriority(e.target.value as Priority)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-hidden"
               >
-                <option value="urgent">بسیار فوری (Urgent)</option>
-                <option value="high">بالا (High)</option>
-                <option value="medium">متوسط (Medium)</option>
-                <option value="low">پایین (Low)</option>
+                <option value="urgent">🔴 بسیار فوری (Urgent)</option>
+                <option value="high">🟠 بالا (High)</option>
+                <option value="medium">🟡 متوسط (Medium)</option>
+                <option value="low">🟢 پایین (Low)</option>
               </select>
             </div>
           </div>
@@ -305,7 +310,7 @@ export const EditProjectModal: React.FC = () => {
               >
                 {users.map(u => (
                   <option key={u.id} value={u.id}>
-                    {u.name} ({u.role === 'admin' ? 'مدیر ارشد' : u.role === 'manager' ? 'مدیر بخش' : 'عضو تیم'})
+                    {u.name} ({u.title})
                   </option>
                 ))}
               </select>
@@ -325,33 +330,18 @@ export const EditProjectModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Start Date & Deadline */}
+          {/* Start Date & Deadline (Shamsi) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                <span>تاریخ شروع</span>
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                <span>تاریخ تحویل / سررسید</span>
-              </label>
-              <input
-                type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden"
-              />
-            </div>
+            <PersianDatePicker
+              label="تاریخ آغاز پروژه (شمسی)"
+              value={startDate}
+              onChange={(d) => setStartDate(d)}
+            />
+            <PersianDatePicker
+              label="مهلت و سررسید پروژه (شمسی)"
+              value={deadline}
+              onChange={(d) => setDeadline(d)}
+            />
           </div>
 
           {/* Team Members Multi-Select */}
@@ -362,7 +352,7 @@ export const EditProjectModal: React.FC = () => {
                 <span>اعضای تیم پروژه ({selectedMemberIds.length} نفر انتخاب شده)</span>
               </label>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl max-h-36 overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl max-h-36 overflow-y-auto">
               {users.map(u => {
                 const isSelected = selectedMemberIds.includes(u.id);
                 return (
@@ -388,41 +378,75 @@ export const EditProjectModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Color & Tags */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-slate-500" />
-                <span>رنگ شناسه پروژه</span>
+          {/* Color & Custom Color Picker */}
+          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Palette className="w-4 h-4 text-indigo-600" />
+                <span>رنگ‌بندی و هویت بصری پروژه</span>
               </label>
-              <div className="flex items-center gap-2 pt-1 flex-wrap">
-                {colorOptions.map(c => (
-                  <button
-                    type="button"
-                    key={c}
-                    onClick={() => setColor(c)}
-                    className={`w-7 h-7 rounded-full transition-transform cursor-pointer ${
-                      color === c ? 'scale-125 ring-2 ring-offset-2 ring-indigo-500' : 'hover:scale-110'
-                    }`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
+              <span className="text-[11px] font-mono font-bold text-slate-600 uppercase px-2 py-0.5 bg-white rounded-md border border-slate-200">
+                {color}
+              </span>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-slate-500" />
-                <span>برچسب‌ها (با کاما جدا کنید)</span>
-              </label>
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                placeholder="توسعه, زیرساخت, هوش مصنوعی"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden"
-              />
+            <div className="flex items-center gap-2 flex-wrap">
+              {colorOptions.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer shadow-2xs ${
+                    color.toLowerCase() === c.toLowerCase() ? 'border-slate-900 scale-120 ring-2 ring-indigo-400 ring-offset-1' : 'border-transparent hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+
+              {/* Custom Color Native Picker Input */}
+              <div className="flex items-center gap-1.5 pr-2 border-r border-slate-300 mr-1">
+                <label className="relative flex items-center justify-center w-8 h-8 rounded-full border-2 border-dashed border-slate-400 hover:border-indigo-600 bg-white cursor-pointer group shadow-2xs">
+                  <Pipette className="w-4 h-4 text-slate-600 group-hover:text-indigo-600" />
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                    title="انتخاب رنگ سفارشی دلخواه"
+                  />
+                </label>
+                <div className="flex items-center">
+                  <span className="text-xs text-slate-400 font-mono pr-1">#</span>
+                  <input
+                    type="text"
+                    maxLength={7}
+                    value={color.replace('#', '')}
+                    onChange={(e) => {
+                      const val = '#' + e.target.value.replace(/[^0-9A-Fa-f]/g, '');
+                      setColor(val);
+                    }}
+                    placeholder="6366f1"
+                    className="w-20 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 text-left uppercase focus:outline-hidden"
+                  />
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-slate-500" />
+              <span>برچسب‌ها (با کاما جدا کنید)</span>
+            </label>
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              placeholder="رسانه, تولید محتوا, مستند"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden"
+            />
           </div>
 
           {/* Footer Actions */}
@@ -458,3 +482,4 @@ export const EditProjectModal: React.FC = () => {
     </div>
   );
 };
+

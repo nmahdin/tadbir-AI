@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ProjectTemplate, TemplateTask, Priority, TaskStatus } from '../../types';
-import { X, Plus, Trash2, Layers, Check, Sparkles } from 'lucide-react';
+import { X, Plus, Trash2, Layers, Check, Sparkles, Palette, Pipette } from 'lucide-react';
 
 export const TemplateEditorModal: React.FC = () => {
   const {
@@ -9,6 +9,7 @@ export const TemplateEditorModal: React.FC = () => {
     setIsTemplateEditorOpen,
     selectedTemplateId,
     templates,
+    categories,
     addTemplate,
     updateTemplate,
     setIsTemplatesModalOpen
@@ -18,7 +19,7 @@ export const TemplateEditorModal: React.FC = () => {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('مهندسی نرم‌افزار');
+  const [category, setCategory] = useState(categories[0] || 'تولید محتوا و رسانه');
   const [color, setColor] = useState('#6366f1');
   const [defaultPriority, setDefaultPriority] = useState<Priority>('high');
   const [estimatedDurationDays, setEstimatedDurationDays] = useState(14);
@@ -61,25 +62,25 @@ export const TemplateEditorModal: React.FC = () => {
     if (editingTemplate) {
       setName(editingTemplate.name);
       setDescription(editingTemplate.description);
-      setCategory(editingTemplate.category);
-      setColor(editingTemplate.color);
-      setDefaultPriority(editingTemplate.defaultPriority);
-      setEstimatedDurationDays(editingTemplate.estimatedDurationDays);
+      setCategory(editingTemplate.category || categories[0] || 'تولید محتوا و رسانه');
+      setColor(editingTemplate.color || '#6366f1');
+      setDefaultPriority(editingTemplate.defaultPriority || 'high');
+      setEstimatedDurationDays(editingTemplate.estimatedDurationDays || 14);
       setBudget(editingTemplate.budget || '۱۰۰,۰۰۰,۰۰۰ تومان');
-      setTagInput(editingTemplate.tags.join(', '));
-      setStages(editingTemplate.stages);
-      setTasks(editingTemplate.tasks);
+      setTagInput((editingTemplate.tags || []).join(', '));
+      setStages(editingTemplate.stages || stages);
+      setTasks(editingTemplate.tasks || []);
     } else {
       setName('');
       setDescription('');
-      setCategory('مهندسی نرم‌افزار');
+      setCategory(categories[0] || 'تولید محتوا و رسانه');
       setColor('#6366f1');
       setDefaultPriority('high');
       setEstimatedDurationDays(14);
       setBudget('۱۰۰,۰۰۰,۰۰۰ تومان');
-      setTagInput('اسپرینت, چابک');
+      setTagInput('رسانه, تولید محتوا');
     }
-  }, [editingTemplate, isTemplateEditorOpen]);
+  }, [editingTemplate, isTemplateEditorOpen, categories]);
 
   if (!isTemplateEditorOpen) return null;
 
@@ -155,15 +156,30 @@ export const TemplateEditorModal: React.FC = () => {
     setIsTemplatesModalOpen(true);
   };
 
-  const colorPalette = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'];
+  const colorPalette = [
+    '#6366f1',
+    '#3b82f6',
+    '#0ea5e9',
+    '#10b981',
+    '#14b8a6',
+    '#f59e0b',
+    '#f97316',
+    '#ef4444',
+    '#ec4899',
+    '#8b5cf6',
+    '#64748b'
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150" dir="rtl">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[90vh] max-h-[850px]">
         {/* Header */}
         <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+            <div 
+              className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md transition-colors"
+              style={{ backgroundColor: color }}
+            >
               <Layers className="w-5 h-5" />
             </div>
             <div>
@@ -203,8 +219,8 @@ export const TemplateEditorModal: React.FC = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="مثال: اسپرینت توسعه چابک، کمپین دیجیتال مارکتینگ..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="مثال: تولید مستند تحلیلی، پویش رسانه‌ای، پوشش رویداد زنده..."
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-hidden font-bold"
                 />
               </div>
 
@@ -217,11 +233,9 @@ export const TemplateEditorModal: React.FC = () => {
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-hidden"
                 >
-                  <option value="مهندسی نرم‌افزار">مهندسی نرم‌افزار</option>
-                  <option value="بازاریابی و رشد">بازاریابی و رشد</option>
-                  <option value="طراحی محصول">طراحی محصول</option>
-                  <option value="امنیت و انطباق">امنیت و انطباق</option>
-                  <option value="عمومی">عمومی و مدیریتی</option>
+                  {categories.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -239,7 +253,7 @@ export const TemplateEditorModal: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
                   مدت زمان تقریبی (روز)
@@ -262,10 +276,10 @@ export const TemplateEditorModal: React.FC = () => {
                   onChange={(e) => setDefaultPriority(e.target.value as Priority)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-hidden"
                 >
-                  <option value="urgent">فوری</option>
-                  <option value="high">بالا</option>
-                  <option value="medium">متوسط</option>
-                  <option value="low">پایین</option>
+                  <option value="urgent">🔴 فوری</option>
+                  <option value="high">🟠 بالا</option>
+                  <option value="medium">🟡 متوسط</option>
+                  <option value="low">🟢 پایین</option>
                 </select>
               </div>
 
@@ -281,23 +295,60 @@ export const TemplateEditorModal: React.FC = () => {
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-hidden"
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  رنگ تم الگو
+            {/* Color & Custom Color Picker */}
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Palette className="w-4 h-4 text-indigo-600" />
+                  <span>رنگ‌بندی و هویت بصری الگو</span>
                 </label>
-                <div className="flex items-center gap-1.5 pt-1">
-                  {colorPalette.map(c => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setColor(c)}
-                      className={`w-6 h-6 rounded-full border transition-transform cursor-pointer ${
-                        color === c ? 'border-slate-900 scale-110 shadow-xs' : 'border-transparent hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: c }}
+                <span className="text-[11px] font-mono font-bold text-slate-600 uppercase px-2 py-0.5 bg-white rounded-md border border-slate-200">
+                  {color}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {colorPalette.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer shadow-2xs ${
+                      color.toLowerCase() === c.toLowerCase() ? 'border-slate-900 scale-120 ring-2 ring-indigo-400 ring-offset-1' : 'border-transparent hover:scale-110'
+                    }`}
+                    style={{ backgroundColor: c }}
+                    title={c}
+                  />
+                ))}
+
+                {/* Custom Color Native Picker Input */}
+                <div className="flex items-center gap-1.5 pr-2 border-r border-slate-300 mr-1">
+                  <label className="relative flex items-center justify-center w-8 h-8 rounded-full border-2 border-dashed border-slate-400 hover:border-indigo-600 bg-white cursor-pointer group shadow-2xs">
+                    <Pipette className="w-4 h-4 text-slate-600 group-hover:text-indigo-600" />
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                      title="انتخاب رنگ سفارشی دلخواه"
                     />
-                  ))}
+                  </label>
+                  <div className="flex items-center">
+                    <span className="text-xs text-slate-400 font-mono pr-1">#</span>
+                    <input
+                      type="text"
+                      maxLength={7}
+                      value={color.replace('#', '')}
+                      onChange={(e) => {
+                        const val = '#' + e.target.value.replace(/[^0-9A-Fa-f]/g, '');
+                        setColor(val);
+                      }}
+                      placeholder="6366f1"
+                      className="w-20 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 text-left uppercase focus:outline-hidden"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -351,8 +402,7 @@ export const TemplateEditorModal: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleRemoveTask(t.id)}
-                      className="p-1.5 text-slate-600 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
-                      title="حذف تسک"
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -361,61 +411,61 @@ export const TemplateEditorModal: React.FC = () => {
               )}
             </div>
 
-            {/* Quick Add Task Sub-Form */}
-            <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/80 space-y-3">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900">
+            {/* Quick Add Task Box */}
+            <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-3">
+              <h5 className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
                 <Plus className="w-4 h-4 text-indigo-600" />
-                <span>افزودن تسک جدید به الگو</span>
-              </div>
+                <span>افزودن تسک پیش‌فرض جدید به الگو</span>
+              </h5>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
                 <div className="sm:col-span-2">
                   <input
                     type="text"
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
-                    placeholder="عنوان تسک پیش‌فرض..."
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden"
+                    placeholder="عنوان تسک (مثال: ضبط نریشن و صداگذاری)..."
+                    className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl text-xs text-slate-900 focus:outline-hidden"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-2">
+                <div>
                   <input
                     type="number"
                     min={1}
                     value={newTaskDueDays}
                     onChange={(e) => setNewTaskDueDays(Number(e.target.value))}
-                    placeholder="روز سررسید"
-                    title="سررسید (روز پس از شروع پروژه)"
-                    className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden"
+                    placeholder="مهلت (چند روز پس از شروع)"
+                    className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl text-xs text-slate-900 focus:outline-hidden"
                   />
-                  <input
-                    type="number"
-                    min={1}
-                    value={newTaskHours}
-                    onChange={(e) => setNewTaskHours(Number(e.target.value))}
-                    placeholder="ساعت کار"
-                    title="تخمین ساعت کاری"
-                    className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden"
-                  />
+                </div>
+                <div>
+                  <select
+                    value={newTaskPriority}
+                    onChange={(e) => setNewTaskPriority(e.target.value as Priority)}
+                    className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-hidden"
+                  >
+                    <option value="urgent">فوری</option>
+                    <option value="high">بالا</option>
+                    <option value="medium">متوسط</option>
+                    <option value="low">پایین</option>
+                  </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={newTaskDesc}
                   onChange={(e) => setNewTaskDesc(e.target.value)}
-                  placeholder="شرح مختصر وظیفه..."
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden"
+                  placeholder="شرح و دستورالعمل اجرایی تسک..."
+                  className="w-full p-2.5 bg-white border border-indigo-200 rounded-xl text-xs text-slate-800 focus:outline-hidden resize-none"
                 />
-
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={newTaskSubtasks}
                   onChange={(e) => setNewTaskSubtasks(e.target.value)}
-                  placeholder="چک‌لیست‌ها (با کاما یا خط جدید جدا کنید)..."
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden"
+                  placeholder="چک‌لیست زیرتسک‌ها (هر مورد در یک سطر جدید)..."
+                  className="w-full p-2.5 bg-white border border-indigo-200 rounded-xl text-xs text-slate-800 focus:outline-hidden resize-none"
                 />
               </div>
 
@@ -423,15 +473,16 @@ export const TemplateEditorModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleAddTask}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
-                  افزودن این تسک به لیست الگو
+                  <Plus className="w-4 h-4" />
+                  <span>ثبت تسک در الگو</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Footer Submit */}
+          {/* Footer Actions */}
           <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
             <button
               type="button"
@@ -439,13 +490,13 @@ export const TemplateEditorModal: React.FC = () => {
                 setIsTemplateEditorOpen(false);
                 setIsTemplatesModalOpen(true);
               }}
-              className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-800"
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer"
             >
               انصراف
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
             >
               {editingTemplate ? 'ذخیره تغییرات الگو' : 'ایجاد و ذخیره الگو'}
             </button>
